@@ -10,6 +10,7 @@ import CustomerDashboard from "./pages/customer/CustomerDashboard";
 import SearchWorkers from "./pages/customer/SearchWorkers";
 import WorkerJobs from "./pages/worker/WorkerJobs";
 //import ProtectedRoute from "./auth/ProtectedRoute";
+import WorkerProfileSetup from "./pages/worker/WorkerProfileSetup";
 
 function App() {
   return (
@@ -86,6 +87,14 @@ function App() {
           element={
             <ProtectedRoute role="CUSTOMER">
               <SearchWorkers />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/worker/profile"
+          element={
+            <ProtectedRoute role="WORKER">
+              <WorkerProfileSetup />
             </ProtectedRoute>
           }
         />

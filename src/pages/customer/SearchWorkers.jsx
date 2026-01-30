@@ -1,33 +1,37 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import Navbar from "../../components/Navbar";
-import { getServices, searchWorkers } from "../../api/jobApi";
+import { searchWorkers } from "../../api/jobApi";
 
 const SearchWorkers = () => {
-  const navigate = useNavigate();
+  const [filters, setFilters] = useState({
+    service: "",
+    pricingType: "",
+    maxPrice: "",
+    minRating: "",
+  });
 
-  const [services, setServices] = useState([]);
-  const [service, setService] = useState("");
   const [workers, setWorkers] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Load service categories
-  useEffect(() => {
-    getServices()
-      .then((res) => setServices(res.data))
-      .catch(() => alert("Failed to load services"));
-  }, []);
+  const handleChange = (e) => {
+    setFilters({ ...filters, [e.target.name]: e.target.value });
+  };
 
-  // Search workers by service
   const handleSearch = async () => {
-    if (!service) {
+    if (!filters.service) {
       alert("Please select a service");
       return;
     }
 
+    const params = { service: filters.service };
+
+    if (filters.pricingType) params.pricingType = filters.pricingType;
+    if (filters.maxPrice) params.maxPrice = filters.maxPrice;
+    if (filters.minRating) params.minRating = filters.minRating;
+
     setLoading(true);
     try {
-      const res = await searchWorkers({ service });
+      const res = await searchWorkers(params);
       setWorkers(res.data);
     } catch (err) {
       alert("Failed to search workers");
@@ -36,41 +40,49 @@ const SearchWorkers = () => {
     }
   };
 
-  // Handle booking navigation
-  const handleBook = (workerId) => {
-    localStorage.setItem("selectedWorkerId", workerId);
-    navigate("/customer/book");
-  };
-
   return (
     <>
       <Navbar />
       <div style={styles.container}>
         <h2>Search Workers</h2>
 
-        {/* Service Dropdown */}
-        <div style={styles.searchBox}>
-          <select
-            value={service}
-            onChange={(e) => setService(e.target.value)}
-            style={styles.select}
-          >
+        {/* FILTERS */}
+        <div style={styles.filters}>
+          <select name="service" onChange={handleChange}>
             <option value="">Select Service</option>
-            {services.map((s) => (
-              <option key={s.id} value={s.name}>
-                {s.name}
-              </option>
-            ))}
+            <option value="ELECTRICIAN">Electrician</option>
+            <option value="PLUMBER">Plumber</option>
+            <option value="CARPENTER">Carpenter</option>
           </select>
 
-          <button onClick={handleSearch} style={styles.button}>
+          <select name="pricingType" onChange={handleChange}>
+            <option value="">Any Pricing</option>
+            <option value="HOURLY">Hourly</option>
+            <option value="FIXED">Fixed</option>
+          </select>
+
+          <input
+            type="number"
+            name="maxPrice"
+            placeholder="Max Price"
+            onChange={handleChange}
+          />
+
+          <input
+            type="number"
+            name="minRating"
+            placeholder="Min Rating"
+            onChange={handleChange}
+          />
+
+          <button onClick={handleSearch}>
             {loading ? "Searching..." : "Search"}
           </button>
         </div>
 
         <hr />
 
-        {/* Worker Results */}
+        {/* RESULTS */}
         {workers.length === 0 && !loading && (
           <p>No workers found</p>
         )}
@@ -81,13 +93,6 @@ const SearchWorkers = () => {
             <p>⭐ Rating: {w.rating}</p>
             <p>Experience: {w.experienceYears} years</p>
             <p>Status: {w.available ? "Available" : "Busy"}</p>
-
-            <button
-              style={styles.bookButton}
-              onClick={() => handleBook(w.id)}
-            >
-              Book Service
-            </button>
           </div>
         ))}
       </div>
@@ -97,45 +102,22 @@ const SearchWorkers = () => {
 
 export default SearchWorkers;
 
-/* ---------- STYLES ---------- */
-
 const styles = {
   container: {
     padding: 20,
-    maxWidth: 800,
+    maxWidth: 900,
     margin: "auto",
   },
-  searchBox: {
-    display: "flex",
+  filters: {
+    display: "grid",
+    gridTemplateColumns: "repeat(5, 1fr)",
     gap: 10,
-    marginBottom: 15,
-  },
-  select: {
-    padding: 10,
-    flex: 1,
-  },
-  button: {
-    padding: "10px 18px",
-    background: "#1976d2",
-    color: "#fff",
-    border: "none",
-    borderRadius: 4,
-    cursor: "pointer",
+    marginBottom: 20,
   },
   card: {
-    border: "1px solid #ddd",
-    padding: 16,
-    marginTop: 12,
+    border: "1px solid #ccc",
+    padding: 14,
+    marginTop: 10,
     borderRadius: 6,
-    background: "#fafafa",
-  },
-  bookButton: {
-    marginTop: 8,
-    padding: "8px 14px",
-    background: "#2e7d32",
-    color: "#fff",
-    border: "none",
-    borderRadius: 4,
-    cursor: "pointer",
   },
 };

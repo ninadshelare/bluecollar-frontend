@@ -16,6 +16,10 @@ const WorkerDashboard = () => {
         >
           My Jobs
         </button>
+        <button onClick={() => navigate("/worker/profile")}>
+          Complete Profile
+        </button>
+
       </div>
     </>
   );

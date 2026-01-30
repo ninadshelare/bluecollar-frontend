@@ -27,7 +27,7 @@ const styles = {
     justifyContent: "space-between",
     alignItems: "center",
     padding: "10px 20px",
-    background: "#0d47a1",
+    background: "#55c8ca",
     color: "#fff",
   },
   left: {
