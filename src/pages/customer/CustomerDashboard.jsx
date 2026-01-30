@@ -1,31 +1,32 @@
-import Navbar from "../../components/Navbar";
 import { useNavigate } from "react-router-dom";
+import Navbar from "../../components/Navbar";
 
-const WorkerDashboard = () => {
+const CustomerDashboard = () => {
   const navigate = useNavigate();
+  const name = localStorage.getItem("name");
 
   return (
     <>
       <Navbar />
-      <div style={{ padding: "20px" }}>
-        <h2>Worker Dashboard</h2>
+      <div style={{ padding: 20 }}>
+        <h2>Welcome, {name}</h2>
 
         <button
-          onClick={() => navigate("/worker/jobs")}
+          onClick={() => navigate("/customer/search")}
           style={styles.button}
         >
-          My Jobs
+          Search Services
         </button>
       </div>
     </>
   );
 };
 
-export default WorkerDashboard;
+export default CustomerDashboard;
 
 const styles = {
   button: {
-    padding: "10px 20px",
+    padding: "12px 20px",
     marginTop: "15px",
     background: "#1976d2",
     color: "#fff",

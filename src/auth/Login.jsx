@@ -20,33 +20,34 @@ const Login = () => {
     });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setError("");
+  setLoading(true);
 
-    try {
-      const response = await login(formData);
+  try {
+    const response = await login(formData);
 
-      const { token, role } = response.data;
+    const { userId, role, name } = response.data;
 
-      // Store auth details
-      localStorage.setItem("token", token);
-      localStorage.setItem("role", role);
+    // Store auth details
+    localStorage.setItem("userId", userId);
+    localStorage.setItem("role", role);
+    localStorage.setItem("name", name);
 
-      // Redirect based on role
-      if (role === "ADMIN") navigate("/admin");
-      else if (role === "WORKER") navigate("/worker");
-      else navigate("/customer");
+    // Redirect based on role
+    if (role === "ADMIN") navigate("/admin");
+    else if (role === "WORKER") navigate("/worker");
+    else navigate("/customer");
 
-    } catch (err) {
-      setError(
-        err.response?.data?.message || "Invalid email or password"
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+  } catch (err) {
+    setError(
+      err.response?.data?.message || "Invalid email or password"
+    );
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div style={styles.container}>
