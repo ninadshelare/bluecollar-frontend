@@ -73,23 +73,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/customer"
-          element={
-            <ProtectedRoute role="CUSTOMER">
-              <CustomerDashboard />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/customer/search"
-          element={
-            <ProtectedRoute role="CUSTOMER">
-              <SearchWorkers />
-            </ProtectedRoute>
-          }
-        />
+        
         <Route
           path="/worker/profile"
           element={
