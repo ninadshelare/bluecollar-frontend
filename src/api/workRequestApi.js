@@ -22,3 +22,6 @@ export const completeJob = (requestId, hoursWorked) =>
   axios.post(`${BASE}/api/work-requests/complete`, null, {
     params: { requestId, hoursWorked },
   });
+
+export const getCustomerRequests = (customerId) =>
+  axios.get(`${BASE}/api/work-requests/customer/${customerId}`);

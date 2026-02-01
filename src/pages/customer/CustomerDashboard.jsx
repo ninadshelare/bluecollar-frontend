@@ -110,7 +110,7 @@ useEffect(() => {
             }}
             onMouseEnter={() => setHovered("profile")}
             onMouseLeave={() => setHovered(null)}
-            onClick={() => navigate("/profile")}
+            onClick={() => navigate("/customer/profile")}
           >
           <div style={styles.imageWrapper}>
             <img src={profileImg} alt="profile" style={styles.cardImage} />

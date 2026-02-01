@@ -1,8 +1,11 @@
 import { useState } from "react";
 import Navbar from "../../components/Navbar";
 import { searchWorkers } from "../../api/jobApi";
+import { createWorkRequest } from "../../api/workRequestApi";
 
 const SearchWorkers = () => {
+  const customerId = localStorage.getItem("userId");
+
   const [filters, setFilters] = useState({
     service: "",
     pricingType: "",
@@ -12,6 +15,7 @@ const SearchWorkers = () => {
 
   const [workers, setWorkers] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [bookingId, setBookingId] = useState(null);
 
   const handleChange = (e) => {
     setFilters({ ...filters, [e.target.name]: e.target.value });
@@ -23,7 +27,7 @@ const SearchWorkers = () => {
       return;
     }
 
-    const params = { service: filters.service };
+    const params = { service: filters.service, available: true };
 
     if (filters.pricingType) params.pricingType = filters.pricingType;
     if (filters.maxPrice) params.maxPrice = filters.maxPrice;
@@ -33,10 +37,22 @@ const SearchWorkers = () => {
     try {
       const res = await searchWorkers(params);
       setWorkers(res.data);
-    } catch (err) {
+    } catch {
       alert("Failed to search workers");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleBook = async (workerId) => {
+    try {
+      setBookingId(workerId);
+      await createWorkRequest(customerId, workerId);
+      alert("Service booked successfully! Waiting for worker acceptance.");
+    } catch {
+      alert("Failed to book service");
+    } finally {
+      setBookingId(null);
     }
   };
 
@@ -53,6 +69,7 @@ const SearchWorkers = () => {
             <option value="ELECTRICIAN">Electrician</option>
             <option value="PLUMBER">Plumber</option>
             <option value="CARPENTER">Carpenter</option>
+            <option value="PAINTER">Painter</option>
           </select>
 
           <select name="pricingType" onChange={handleChange}>
@@ -83,24 +100,33 @@ const SearchWorkers = () => {
         <hr />
 
         {/* RESULTS */}
-        {workers.length === 0 && !loading && (
-          <p>No workers found</p>
-        )}
+        {workers.length === 0 && !loading && <p>No workers found</p>}
 
         {workers.map((w) => (
-          <div key={w.id} style={styles.card}>
+          <div key={w.workerId} style={styles.card}>
             <h4>{w.name}</h4>
             <p>⭐ Rating: {w.rating}</p>
             <p>Experience: {w.experienceYears} years</p>
             <p>Status: {w.available ? "Available" : "Busy"}</p>
+
+            <button
+              onClick={() => handleBook(w.workerId)}
+              disabled={!w.available || bookingId === w.workerId}
+              style={styles.bookBtn}
+            >
+              {bookingId === w.workerId ? "Booking..." : "Book Service"}
+            </button>
           </div>
         ))}
+
       </div>
     </>
   );
 };
 
 export default SearchWorkers;
+
+/* ---------- STYLES ---------- */
 
 const styles = {
   container: {
@@ -119,5 +145,13 @@ const styles = {
     padding: 14,
     marginTop: 10,
     borderRadius: 6,
+  },
+  bookBtn: {
+    marginTop: 10,
+    padding: "8px 14px",
+    background: "#2e7d32",
+    color: "#fff",
+    border: "none",
+    cursor: "pointer",
   },
 };

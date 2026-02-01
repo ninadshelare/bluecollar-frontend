@@ -55,25 +55,7 @@ const Navbar = () => {
       </div>
 
       {/* CENTER LINKS */}
-      <div style={styles.links}>
-        <NavLink
-          to="/dashboard"
-          style={({ isActive }) =>
-            isActive ? styles.activeLink : styles.link
-          }
-        >
-          Dashboard
-        </NavLink>
-
-        <NavLink
-          to="/work-requests"
-          style={({ isActive }) =>
-            isActive ? styles.activeLink : styles.link
-          }
-        >
-          Work Requests
-        </NavLink>
-      </div>
+      
 
       {/* RIGHT */}
       <div style={styles.right}>
