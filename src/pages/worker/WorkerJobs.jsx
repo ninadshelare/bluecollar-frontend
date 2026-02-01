@@ -7,7 +7,7 @@ import {
 } from "../../api/workRequestApi";
 
 const WorkerJobs = () => {
-  const workerId = localStorage.getItem("userId");
+  const workerId = localStorage.getItem("workerProfileId");
   const [jobs, setJobs] = useState([]);
   const [hoursWorked, setHoursWorked] = useState({});
 

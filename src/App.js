@@ -11,6 +11,11 @@ import SearchWorkers from "./pages/customer/SearchWorkers";
 import WorkerJobs from "./pages/worker/WorkerJobs";
 //import ProtectedRoute from "./auth/ProtectedRoute";
 import WorkerProfileSetup from "./pages/worker/WorkerProfileSetup";
+import CustomerProfile from "./pages/customer/CustomerProfile";
+import CustomerRequests from "./pages/customer/CustomerRequests";
+
+
+
 
 function App() {
   return (
@@ -73,7 +78,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-        
+
         <Route
           path="/worker/profile"
           element={
@@ -82,6 +87,26 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        <Route
+          path="/customer/profile"
+          element={
+            <ProtectedRoute role="CUSTOMER">
+              <CustomerProfile />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/customer/requests"
+          element={
+            <ProtectedRoute role="CUSTOMER">
+              <CustomerRequests />
+            </ProtectedRoute>
+          }
+        />
+
+
 
       </Routes>
     </BrowserRouter>
