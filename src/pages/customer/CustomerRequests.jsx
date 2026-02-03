@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import Navbar from "../../components/Navbar";
 import { getCustomerRequests } from "../../api/workRequestApi";
 import { submitFeedback } from "../../api/feedbackApi";
-import { payNow } from "../../api/paymentApi";
+import { getPaymentByRequest, payNow } from "../../api/paymentApi";
 import StarRating from "../../components/StarRating";
 
 const CustomerRequests = () => {
@@ -10,10 +10,8 @@ const CustomerRequests = () => {
 
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
-
   const [feedback, setFeedback] = useState({});
-  const [submitting, setSubmitting] = useState(null);
-  const [paying, setPaying] = useState(null);
+  const [processingPayment, setProcessingPayment] = useState(null);
 
   useEffect(() => {
     fetchRequests();
@@ -22,49 +20,47 @@ const CustomerRequests = () => {
   const fetchRequests = async () => {
     try {
       const res = await getCustomerRequests(customerId);
-      setRequests(res.data);
-    } catch {
+      setRequests(res.data || []);
+    } catch (err) {
+      console.error(err);
       alert("Failed to load requests");
     } finally {
       setLoading(false);
     }
   };
 
-  /* 💳 PAY NOW */
   const handlePayNow = async (paymentId) => {
     try {
-      setPaying(paymentId);
+      setProcessingPayment(paymentId);
       await payNow(paymentId);
       alert("Payment successful");
       fetchRequests();
-    } catch {
+    } catch (err) {
+      console.error(err);
       alert("Payment failed");
     } finally {
-      setPaying(null);
+      setProcessingPayment(null);
     }
   };
 
-  /* ⭐ FEEDBACK */
   const handleFeedbackSubmit = async (requestId) => {
     const data = feedback[requestId];
     if (!data?.rating) {
-      alert("Please give rating");
+      alert("Please select rating");
       return;
     }
 
     try {
-      setSubmitting(requestId);
       await submitFeedback({
         requestId,
         rating: data.rating,
         comment: data.comment || "",
       });
-      alert("Feedback submitted successfully");
+      alert("Feedback submitted");
       fetchRequests();
-    } catch {
+    } catch (err) {
+      console.error(err);
       alert("Failed to submit feedback");
-    } finally {
-      setSubmitting(null);
     }
   };
 
@@ -75,7 +71,10 @@ const CustomerRequests = () => {
         <h2>My Requests</h2>
 
         {loading && <p>Loading...</p>}
-        {!loading && requests.length === 0 && <p>No requests found</p>}
+
+        {!loading && requests.length === 0 && (
+          <p>No requests found</p>
+        )}
 
         {requests.map((req) => (
           <div key={req.requestId} style={styles.card}>
@@ -85,10 +84,12 @@ const CustomerRequests = () => {
               <span style={statusStyle(req.status)}>{req.status}</span>
             </p>
 
-            {req.worker && <p><b>Worker:</b> {req.worker.name}</p>}
+            {req.worker && (
+              <p><b>Worker:</b> {req.worker.name}</p>
+            )}
 
             {/* 💳 PAYMENT */}
-            {req.payment && (
+            {req.status === "COMPLETED" && req.payment && (
               <div style={styles.payment}>
                 <p><b>Amount:</b> ₹{req.payment.amount}</p>
                 <p><b>Pricing:</b> {req.payment.pricingType}</p>
@@ -102,11 +103,11 @@ const CustomerRequests = () => {
                 {req.payment.status === "PENDING" && (
                   <button
                     style={styles.payBtn}
-                    disabled={paying === req.payment.paymentId}
+                    disabled={processingPayment === req.payment.paymentId}
                     onClick={() => handlePayNow(req.payment.paymentId)}
                   >
-                    {paying === req.payment.paymentId
-                      ? "Paying..."
+                    {processingPayment === req.payment.paymentId
+                      ? "Processing..."
                       : "Pay Now"}
                   </button>
                 )}
@@ -114,51 +115,52 @@ const CustomerRequests = () => {
             )}
 
             {/* ⭐ FEEDBACK */}
-            {req.payment?.status === "PAID" && !req.feedback && (
-              <div style={styles.feedback}>
-                <h4>Rate Service</h4>
+            {req.payment &&
+              req.payment.status === "PAID" &&
+              !req.feedback && (
+                <div style={styles.feedback}>
+                  <h4>Rate Service</h4>
 
-                <StarRating
-                  rating={feedback[req.requestId]?.rating || 0}
-                  onChange={(rating) =>
-                    setFeedback({
-                      ...feedback,
-                      [req.requestId]: {
-                        ...feedback[req.requestId],
-                        rating,
-                      },
-                    })
-                  }
-                />
+                  <StarRating
+                    rating={feedback[req.requestId]?.rating || 0}
+                    onChange={(rating) =>
+                      setFeedback({
+                        ...feedback,
+                        [req.requestId]: {
+                          ...feedback[req.requestId],
+                          rating,
+                        },
+                      })
+                    }
+                  />
 
-                <textarea
-                  placeholder="Write a comment (optional)"
-                  style={styles.textarea}
-                  onChange={(e) =>
-                    setFeedback({
-                      ...feedback,
-                      [req.requestId]: {
-                        ...feedback[req.requestId],
-                        comment: e.target.value,
-                      },
-                    })
-                  }
-                />
+                  <textarea
+                    placeholder="Comment (optional)"
+                    style={styles.textarea}
+                    onChange={(e) =>
+                      setFeedback({
+                        ...feedback,
+                        [req.requestId]: {
+                          ...feedback[req.requestId],
+                          comment: e.target.value,
+                        },
+                      })
+                    }
+                  />
 
-                <button
-                  onClick={() => handleFeedbackSubmit(req.requestId)}
-                  style={styles.btn}
-                  disabled={submitting === req.requestId}
-                >
-                  {submitting === req.requestId
-                    ? "Submitting..."
-                    : "Submit Feedback"}
-                </button>
-              </div>
-            )}
+                  <button
+                    onClick={() =>
+                      handleFeedbackSubmit(req.requestId)
+                    }
+                    style={styles.btn}
+                  >
+                    Submit Feedback
+                  </button>
+                </div>
+              )}
 
             {/* ✅ FEEDBACK GIVEN */}
-            {req.feedback && (
+            {req.feedback && req.feedback.rating && (
               <p style={{ color: "#2e7d32", fontWeight: "bold" }}>
                 Feedback Submitted ⭐ {req.feedback.rating}
               </p>
@@ -224,5 +226,5 @@ const statusStyle = (status) => {
   if (status === "PENDING") return { color: "#f57c00" };
   if (status === "ACCEPTED") return { color: "#1976d2" };
   if (status === "COMPLETED") return { color: "#2e7d32" };
-  if (status === "PAID") return { color: "#2e7d32", fontWeight: "bold" };
+  if (status === "PAID") return { color: "#2e7d32" };
 };

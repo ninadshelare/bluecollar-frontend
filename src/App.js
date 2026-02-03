@@ -13,7 +13,8 @@ import WorkerJobs from "./pages/worker/WorkerJobs";
 import WorkerProfileSetup from "./pages/worker/WorkerProfileSetup";
 import CustomerProfile from "./pages/customer/CustomerProfile";
 import CustomerRequests from "./pages/customer/CustomerRequests";
-
+import MaidAttendance from "./pages/worker/MaidAttendance";
+import MaidSalary from "./pages/worker/MaidSalary";
 
 
 
@@ -23,6 +24,9 @@ function App() {
       <Routes>
         <Route path="/" element={<AuthPage />} />
         <Route path="/login" element={<AuthPage />} />
+        <Route path="/worker/attendance" element={<MaidAttendance />} />
+        <Route path="/worker/salary" element={<MaidSalary />} />
+
 
         <Route
           path="/admin"

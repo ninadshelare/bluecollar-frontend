@@ -8,9 +8,6 @@ const SearchWorkers = () => {
 
   const [filters, setFilters] = useState({
     service: "",
-    pricingType: "",
-    maxPrice: "",
-    minRating: "",
   });
 
   const [workers, setWorkers] = useState([]);
@@ -27,17 +24,18 @@ const SearchWorkers = () => {
       return;
     }
 
-    const params = { service: filters.service, available: true };
-
-    if (filters.pricingType) params.pricingType = filters.pricingType;
-    if (filters.maxPrice) params.maxPrice = filters.maxPrice;
-    if (filters.minRating) params.minRating = filters.minRating;
-
     setLoading(true);
     try {
-      const res = await searchWorkers(params);
+      const res = await searchWorkers({
+        service: filters.service,
+        available: true,
+      });
+
+      console.log("SEARCH RESPONSE 👉", res.data);
+
       setWorkers(res.data);
-    } catch {
+    } catch (err) {
+      console.error("SEARCH ERROR 👉", err.response?.data || err.message);
       alert("Failed to search workers");
     } finally {
       setLoading(false);
@@ -47,14 +45,26 @@ const SearchWorkers = () => {
   const handleBook = async (workerId) => {
     try {
       setBookingId(workerId);
-      await createWorkRequest(customerId, workerId);
-      alert("Service booked successfully! Waiting for worker acceptance.");
-    } catch {
-      alert("Failed to book service");
+
+      const cid = Number(customerId);
+      const wid = Number(workerId);
+
+      if (!cid || !wid) {
+        alert("Invalid customer or worker ID");
+        return;
+      }
+
+      await createWorkRequest(cid, wid);
+
+      alert("Service booked successfully!");
+    } catch (err) {
+      console.error("BOOK ERROR 👉", err.response?.data || err.message);
+      alert(err.response?.data?.message || "Failed to book service");
     } finally {
       setBookingId(null);
     }
   };
+
 
   return (
     <>
@@ -62,35 +72,17 @@ const SearchWorkers = () => {
       <div style={styles.container}>
         <h2>Search Workers</h2>
 
-        {/* FILTERS */}
+        {/* FILTER */}
         <div style={styles.filters}>
           <select name="service" onChange={handleChange}>
             <option value="">Select Service</option>
             <option value="ELECTRICIAN">Electrician</option>
             <option value="PLUMBER">Plumber</option>
-            <option value="CARPENTER">Carpenter</option>
             <option value="PAINTER">Painter</option>
+            <option value="CARPENTER">Carpenter</option>
+            <option value="LABOUR">Labour</option>
+            <option value="MAID">Maid</option>
           </select>
-
-          <select name="pricingType" onChange={handleChange}>
-            <option value="">Any Pricing</option>
-            <option value="HOURLY">Hourly</option>
-            <option value="FIXED">Fixed</option>
-          </select>
-
-          <input
-            type="number"
-            name="maxPrice"
-            placeholder="Max Price"
-            onChange={handleChange}
-          />
-
-          <input
-            type="number"
-            name="minRating"
-            placeholder="Min Rating"
-            onChange={handleChange}
-          />
 
           <button onClick={handleSearch}>
             {loading ? "Searching..." : "Search"}
@@ -102,22 +94,35 @@ const SearchWorkers = () => {
         {/* RESULTS */}
         {workers.length === 0 && !loading && <p>No workers found</p>}
 
-        {workers.map((w) => (
-          <div key={w.workerId} style={styles.card}>
-            <h4>{w.name}</h4>
-            <p>⭐ Rating: {w.rating}</p>
-            <p>Experience: {w.experienceYears} years</p>
-            <p>Status: {w.available ? "Available" : "Busy"}</p>
+        {workers.map((w) => {
+          const pricing = w.pricing?.[0];
 
-            <button
-              onClick={() => handleBook(w.workerId)}
-              disabled={!w.available || bookingId === w.workerId}
-              style={styles.bookBtn}
-            >
-              {bookingId === w.workerId ? "Booking..." : "Book Service"}
-            </button>
-          </div>
-        ))}
+          return (
+            <div key={w.workerId} style={styles.card}>
+              <h4>{w.name}</h4>
+              <p>⭐ Rating: {w.rating ?? "N/A"}</p>
+              <p>Experience: {w.experienceYears} years</p>
+              <p>Status: {w.available ? "Available" : "Busy"}</p>
+
+              {pricing ? (
+                <p>
+                  <b>Price:</b> ₹{pricing.price}{" "}
+                  <small>({pricing.pricingType})</small>
+                </p>
+              ) : (
+                <p style={{ color: "gray" }}>Pricing not available</p>
+              )}
+
+              <button
+                onClick={() => handleBook(w.workerId)}
+                disabled={!w.available || bookingId === w.workerId}
+                style={styles.bookBtn}
+              >
+                {bookingId === w.workerId ? "Booking..." : "Book Service"}
+              </button>
+            </div>
+          );
+        })}
 
       </div>
     </>
@@ -135,8 +140,7 @@ const styles = {
     margin: "auto",
   },
   filters: {
-    display: "grid",
-    gridTemplateColumns: "repeat(5, 1fr)",
+    display: "flex",
     gap: 10,
     marginBottom: 20,
   },

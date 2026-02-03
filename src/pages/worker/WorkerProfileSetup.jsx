@@ -3,37 +3,54 @@ import Navbar from "../../components/Navbar";
 import axiosInstance from "../../api/axiosInstance";
 import { useNavigate } from "react-router-dom";
 
+const SERVICE_MAP = {
+  ELECTRICIAN: { workerType: "SKILLED", pricingType: "PER_JOB" },
+  PLUMBER: { workerType: "SKILLED", pricingType: "PER_JOB" },
+  PAINTER: { workerType: "SKILLED", pricingType: "PER_JOB" },
+  CARPENTER: { workerType: "SKILLED", pricingType: "PER_JOB" },
+  LABOUR: { workerType: "LABOUR", pricingType: "HOURLY" },
+  MAID: { workerType: "MAID", pricingType: "MONTHLY" },
+};
+
+
 const WorkerProfileSetup = () => {
   const navigate = useNavigate();
-
   const userId = localStorage.getItem("userId");
   const workerProfileId = localStorage.getItem("workerProfileId");
 
-  const [services, setServices] = useState([]);
   const [form, setForm] = useState({
-    serviceName: "",
-    pricingType: "HOURLY",
-    price: "",
-    experienceYears: "",
-  });
+  serviceName: "",
+  workerType: "",
+  pricingType: "",
+  price: "",
+  experienceYears: "",
+});
+
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  /* -------- FETCH SERVICES ONLY (NO REDIRECTS) -------- */
-  useEffect(() => {
-    axiosInstance
-      .get("/api/services")
-      .then((res) => setServices(res.data))
-      .catch(() => setError("Failed to load services"));
-  }, []);
+  /* -------- HANDLE SERVICE CHANGE -------- */
+  const handleServiceChange = (e) => {
+  const service = e.target.value;
+  const mapping = SERVICE_MAP[service];
+
+  setForm({
+    ...form,
+    serviceName: service,
+    workerType: mapping.workerType,
+    pricingType: mapping.pricingType,
+  });
+};
+
+
 
   /* -------- HANDLE INPUT -------- */
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  /* -------- SUBMIT (CREATE OR UPDATE) -------- */
+  /* -------- SUBMIT -------- */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -44,23 +61,24 @@ const WorkerProfileSetup = () => {
     }
 
     const payload = {
-      serviceName: form.serviceName,
-      pricingType: form.pricingType,
-      price: Number(form.price),
-      experienceYears: Number(form.experienceYears),
-    };
+  serviceName: form.serviceName,
+  workerType: form.workerType,       
+  pricingType: form.pricingType,     
+  price: Number(form.price),
+  experienceYears: Number(form.experienceYears),
+};
+
+
 
     setLoading(true);
     try {
       if (workerProfileId) {
-        // UPDATE
         await axiosInstance.put(
           `/api/workers/profile/${workerProfileId}`,
           payload
         );
         alert("Profile updated successfully");
       } else {
-        // CREATE
         const res = await axiosInstance.post(
           "/api/workers/profile",
           payload,
@@ -91,18 +109,18 @@ const WorkerProfileSetup = () => {
         <form onSubmit={handleSubmit} style={styles.form}>
           {/* SERVICE */}
           <select
-            name="serviceName"
             value={form.serviceName}
-            onChange={handleChange}
+            onChange={handleServiceChange}
             required
             style={styles.input}
           >
             <option value="">Select Service</option>
-            {services.map((s) => (
-              <option key={s.id} value={s.name}>
-                {s.name}
-              </option>
-            ))}
+            <option value="ELECTRICIAN">Electrician</option>
+            <option value="PLUMBER">Plumber</option>
+            <option value="PAINTER">Painter</option>
+            <option value="CARPENTER">Carpenter</option>
+            <option value="LABOUR">Labour</option>
+            <option value="MAID">Maid</option>
           </select>
 
           {/* EXPERIENCE */}
@@ -117,22 +135,30 @@ const WorkerProfileSetup = () => {
             style={styles.input}
           />
 
-          {/* PRICING TYPE */}
-          <select
-            name="pricingType"
-            value={form.pricingType}
-            onChange={handleChange}
-            style={styles.input}
-          >
-            <option value="HOURLY">Hourly</option>
-            <option value="FIXED">Fixed</option>
-          </select>
+          {/* AUTO PRICING TYPE (READ ONLY) */}
+          {form.pricingType && (
+            <input
+              value={`Pricing Type: ${form.pricingType}`}
+              disabled
+              style={{
+                ...styles.input,
+                background: "#f0f0f0",
+                fontWeight: "bold",
+              }}
+            />
+          )}
 
           {/* PRICE */}
           <input
             type="number"
             name="price"
-            placeholder="Price"
+            placeholder={
+              form.pricingType === "MONTHLY"
+                ? "Monthly Salary"
+                : form.pricingType === "HOURLY"
+                  ? "Hourly Rate"
+                  : "Fixed Price"
+            }
             value={form.price}
             onChange={handleChange}
             min="1"
@@ -141,11 +167,7 @@ const WorkerProfileSetup = () => {
           />
 
           <button type="submit" disabled={loading} style={styles.button}>
-            {loading
-              ? "Saving..."
-              : workerProfileId
-                ? "Update Profile"
-                : "Save Profile"}
+            {loading ? "Saving..." : "Save Profile"}
           </button>
         </form>
       </div>

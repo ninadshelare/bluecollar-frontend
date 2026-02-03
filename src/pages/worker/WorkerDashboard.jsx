@@ -95,6 +95,25 @@ const WorkerDashboard = () => {
               >
                 Delete Profile
               </button>
+
+              {/* 👩‍🍳 MAID-ONLY BUTTONS */}
+              {profile.workerType === "MAID" && (
+                <>
+                  <button
+                    onClick={() => navigate("/worker/attendance")}
+                    style={styles.primaryBtn}
+                  >
+                    Attendance
+                  </button>
+
+                  <button
+                    onClick={() => navigate("/worker/salary")}
+                    style={styles.primaryBtn}
+                  >
+                    Salary
+                  </button>
+                </>
+              )}
             </>
           )}
         </div>
