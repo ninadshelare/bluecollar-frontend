@@ -52,7 +52,6 @@ const WorkerJobs = () => {
   /* -------- COMPLETE JOB -------- */
   const handleComplete = async (job) => {
     try {
-      // ✅ Only HOURLY jobs need hoursWorked
       if (job.pricingType === "HOURLY") {
         const hours = Number(hoursWorked[job.requestId]);
         if (!hours || hours <= 0) {
@@ -61,7 +60,6 @@ const WorkerJobs = () => {
         }
         await completeJob(job.requestId, hours);
       } else {
-        // ✅ PER_JOB / MONTHLY → NO hoursWorked
         await completeJob(job.requestId);
       }
 
@@ -73,6 +71,20 @@ const WorkerJobs = () => {
     }
   };
 
+  /* 🔥 SORT JOBS: STATUS → NEWEST FIRST */
+  const statusOrder = {
+    PENDING: 1,
+    ACCEPTED: 2,
+    COMPLETED: 3,
+  };
+
+  const sortedJobs = [...jobs].sort((a, b) => {
+    if (statusOrder[a.status] !== statusOrder[b.status]) {
+      return statusOrder[a.status] - statusOrder[b.status];
+    }
+    return new Date(b.requestedAt) - new Date(a.requestedAt);
+  });
+
   return (
     <>
       <Navbar />
@@ -80,9 +92,9 @@ const WorkerJobs = () => {
         <h2>My Jobs</h2>
 
         {loading && <p>Loading...</p>}
-        {!loading && jobs.length === 0 && <p>No jobs assigned</p>}
+        {!loading && sortedJobs.length === 0 && <p>No jobs assigned</p>}
 
-        {jobs.map((job) => (
+        {sortedJobs.map((job) => (
           <div key={job.requestId} style={styles.card}>
             <p><b>Service:</b> {job.serviceName}</p>
 
@@ -100,7 +112,6 @@ const WorkerJobs = () => {
               </span>
             </p>
 
-            {/* PENDING → ACCEPT */}
             {job.status === "PENDING" && (
               <button
                 onClick={() => handleAccept(job.requestId)}
@@ -110,10 +121,8 @@ const WorkerJobs = () => {
               </button>
             )}
 
-            {/* ACCEPTED → COMPLETE */}
             {job.status === "ACCEPTED" && (
               <div style={{ marginTop: 10 }}>
-                {/* ✅ HOURS INPUT ONLY FOR HOURLY */}
                 {job.pricingType === "HOURLY" && (
                   <input
                     type="number"
@@ -139,7 +148,6 @@ const WorkerJobs = () => {
               </div>
             )}
 
-            {/* COMPLETED */}
             {job.status === "COMPLETED" && (
               <p style={styles.completedText}>✔ Job Completed</p>
             )}
