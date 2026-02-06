@@ -7,39 +7,68 @@ import {
   deleteCustomerProfile,
 } from "../../api/customerApi";
 
+/* ---------- FORM SHAPE ---------- */
+const emptyForm = {
+  phone: "",
+  addressLine1: "",
+  addressLine2: "",
+  city: "",
+  state: "",
+  pincode: "",
+};
+
 const CustomerProfile = () => {
   const userId = localStorage.getItem("userId");
 
   const [profileExists, setProfileExists] = useState(false);
-  const [form, setForm] = useState({
-    phone: "",
-    addressLine1: "",
-    addressLine2: "",
-    city: "",
-    state: "",
-    pincode: "",
-  });
-
+  const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
+  /* ---------- DARK MODE ---------- */
+  const [darkMode, setDarkMode] = useState(
+    localStorage.getItem("theme") === "dark"
+  );
+
+  /* Sync dark mode */
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setDarkMode(localStorage.getItem("theme") === "dark");
+    }, 200);
+    return () => clearInterval(interval);
+  }, []);
+
+  /* ---------- LOAD PROFILE ---------- */
   useEffect(() => {
     getCustomerProfile(userId)
       .then((res) => {
-        setForm(res.data);
+        const p = res.data;
+
+        setForm({
+          phone: p.phone || "",
+          addressLine1: p.addressLine1 || "",
+          addressLine2: p.addressLine2 || "",
+          city: p.city || "",
+          state: p.state || "",
+          pincode: p.pincode || "",
+        });
+
         setProfileExists(true);
       })
       .catch(() => {
         setProfileExists(false);
+        setForm(emptyForm);
       })
       .finally(() => setLoading(false));
   }, [userId]);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+    setError("");
   };
 
+  /* ---------- SAVE ---------- */
   const handleSave = async () => {
     setSaving(true);
     setError("");
@@ -60,87 +89,99 @@ const CustomerProfile = () => {
     }
   };
 
+  /* ---------- DELETE ---------- */
   const handleDelete = async () => {
-    if (!window.confirm("Are you sure you want to delete your profile?")) return;
+    if (!window.confirm("Delete your profile permanently?")) return;
 
     try {
       await deleteCustomerProfile(userId);
-      alert("Profile deleted");
+      alert("Profile deleted successfully");
       setProfileExists(false);
-      setForm({
-        phone: "",
-        addressLine1: "",
-        addressLine2: "",
-        city: "",
-        state: "",
-        pincode: "",
-      });
+      setForm(emptyForm);
     } catch {
       alert("Failed to delete profile");
     }
   };
 
-  if (loading) return <p style={{ padding: 20 }}>Loading...</p>;
+  if (loading) {
+    return (
+      <>
+        <Navbar />
+        <div style={styles.loading}>Loading...</div>
+      </>
+    );
+  }
 
   return (
     <>
       <Navbar />
-      <div style={styles.container}>
-        <h2>{profileExists ? "Your Profile" : "Complete Profile"}</h2>
 
-        {error && <p style={styles.error}>{error}</p>}
+      <div
+        style={{
+          ...styles.page,
+          background: darkMode
+            ? "linear-gradient(135deg,#1a1a1a,#121212)"
+            : "linear-gradient(135deg,#e3f2fd,#fce4ec)",
+        }}
+      >
+        <div
+          style={{
+            ...styles.card,
+            background: darkMode ? "#1e1e1e" : "#ffffff",
+            color: darkMode ? "#ffffff" : "#000000",
+            boxShadow: darkMode
+              ? "0 20px 40px rgba(0,0,0,0.6)"
+              : "0 20px 40px rgba(0,0,0,0.15)",
+          }}
+        >
+          <h2 style={styles.heading}>
+            {profileExists ? "Your Profile" : "Complete Your Profile"}
+          </h2>
 
-        <input
-          name="phone"
-          placeholder="Phone"
-          value={form.phone}
-          onChange={handleChange}
-        />
+          {error && <p style={styles.error}>{error}</p>}
 
-        <input
-          name="addressLine1"
-          placeholder="Address Line 1"
-          value={form.addressLine1}
-          onChange={handleChange}
-        />
+          <div style={styles.grid}>
+            {Object.keys(form).map((field) => (
+              <input
+                key={field}
+                name={field}
+                placeholder={
+                  field === "addressLine2"
+                    ? "Address Line 2 (Optional)"
+                    : field.replace(/([A-Z])/g, " $1")
+                }
+                value={form[field]}
+                onChange={handleChange}
+                style={{
+                  ...styles.input,
+                  background: darkMode ? "#2a2a2a" : "#f9f9f9",
+                  color: darkMode ? "#fff" : "#000",
+                  border: darkMode
+                    ? "1px solid #444"
+                    : "1px solid #ddd",
+                }}
+              />
+            ))}
+          </div>
 
-        <input
-          name="addressLine2"
-          placeholder="Address Line 2"
-          value={form.addressLine2}
-          onChange={handleChange}
-        />
-
-        <input
-          name="city"
-          placeholder="City"
-          value={form.city}
-          onChange={handleChange}
-        />
-
-        <input
-          name="state"
-          placeholder="State"
-          value={form.state}
-          onChange={handleChange}
-        />
-
-        <input
-          name="pincode"
-          placeholder="Pincode"
-          value={form.pincode}
-          onChange={handleChange}
-        />
-
-        <button onClick={handleSave} disabled={saving}>
-          {saving ? "Saving..." : profileExists ? "Update Profile" : "Save Profile"}
-        </button>
-
-        {profileExists && (
-          <button onClick={handleDelete} style={styles.deleteBtn}>
-            Delete Profile
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            style={styles.primaryBtn}
+          >
+            {saving
+              ? "Saving..."
+              : profileExists
+              ? "Update Profile"
+              : "Save Profile"}
           </button>
-        )}
+
+          {profileExists && (
+            <button onClick={handleDelete} style={styles.deleteBtn}>
+              Delete Profile
+            </button>
+          )}
+        </div>
       </div>
     </>
   );
@@ -148,23 +189,78 @@ const CustomerProfile = () => {
 
 export default CustomerProfile;
 
+/* ------------------ STYLES ------------------ */
+
 const styles = {
-  container: {
-    maxWidth: 500,
-    margin: "auto",
-    padding: 20,
+  page: {
+    minHeight: "100vh",
+    padding: "80px 20px",
     display: "flex",
-    flexDirection: "column",
-    gap: 10,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  deleteBtn: {
-    background: "#d32f2f",
-    color: "#fff",
+
+  card: {
+    width: "100%",
+    maxWidth: "650px",
+    padding: "50px",
+    borderRadius: "30px",
+    transition: "0.3s",
+  },
+
+  heading: {
+    fontSize: "28px",
+    marginBottom: "40px",
+    textAlign: "center",
+    fontWeight: "600",
+  },
+
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))",
+    gap: "24px",
+    marginBottom: "40px",
+  },
+
+  input: {
+    padding: "18px",
+    borderRadius: "20px",
+    fontSize: "14px",
+    outline: "none",
+  },
+
+  primaryBtn: {
+    width: "100%",
+    padding: "18px",
+    borderRadius: "25px",
     border: "none",
-    padding: 10,
+    background: "linear-gradient(135deg,#7b1fa2,#42a5f5)",
+    color: "#fff",
+    fontSize: "16px",
+    fontWeight: "bold",
+    cursor: "pointer",
+    marginBottom: "18px",
+  },
+
+  deleteBtn: {
+    width: "100%",
+    padding: "18px",
+    borderRadius: "25px",
+    border: "none",
+    background: "#ef5350",
+    color: "#fff",
+    fontSize: "15px",
     cursor: "pointer",
   },
+
   error: {
-    color: "red",
+    color: "#ff5252",
+    marginBottom: "20px",
+    textAlign: "center",
+  },
+
+  loading: {
+    padding: "100px",
+    textAlign: "center",
   },
 };
