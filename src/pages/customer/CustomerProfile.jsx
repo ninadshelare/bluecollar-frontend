@@ -229,11 +229,8 @@ const CustomerProfile = () => {
 };
 
 export default CustomerProfile;
-<<<<<<< Updated upstream
-=======
 
 
->>>>>>> Stashed changes
 /* ------------------ STYLES ------------------ */
 
 const styles = {

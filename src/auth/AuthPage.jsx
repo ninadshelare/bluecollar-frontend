@@ -17,7 +17,7 @@ const AuthPage = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  /* ---------- DARK MODE SYNC (same as Customer pages) ---------- */
+  /* ---------- DARK MODE SYNC ---------- */
   const [darkMode, setDarkMode] = useState(
     localStorage.getItem("theme") === "dark"
   );
@@ -39,34 +39,19 @@ const AuthPage = () => {
     setError("");
     setLoading(true);
 
-<<<<<<< Updated upstream
     try {
       if (isLogin) {
         const res = await login({
           email: formData.email,
           password: formData.password,
         });
-=======
-                if (res.data.role === "ADMIN") navigate("/admin");
-                else if (res.data.role === "WORKER") navigate("/worker");
-                else navigate("/customer");
-            } else {
-                await register(formData);
-                alert("Registration successful! Please login.");
-                setIsLogin(true);
-            }
-        } catch (err) {
-            setError(err.response?.data?.message || "Something Went Wrong");
-        } finally {
-            setLoading(false);
-        }
-    };
->>>>>>> Stashed changes
 
+        // 🔐 STORE AUTH DATA
         localStorage.setItem("userId", res.data.userId);
         localStorage.setItem("role", res.data.role);
         localStorage.setItem("name", res.data.name);
 
+        // 🚀 REDIRECT
         if (res.data.role === "ADMIN") navigate("/admin");
         else if (res.data.role === "WORKER") navigate("/worker");
         else navigate("/customer");
@@ -120,12 +105,7 @@ const AuthPage = () => {
               placeholder="Full Name"
               onChange={handleChange}
               required
-              style={{
-                ...styles.input,
-                background: darkMode ? "#2a2a2a" : "#f9f9f9",
-                color: darkMode ? "#fff" : "#000",
-                border: darkMode ? "1px solid #444" : "1px solid #ddd",
-              }}
+              style={inputStyle(darkMode)}
             />
           )}
 
@@ -135,12 +115,7 @@ const AuthPage = () => {
             placeholder="Email"
             onChange={handleChange}
             required
-            style={{
-              ...styles.input,
-              background: darkMode ? "#2a2a2a" : "#f9f9f9",
-              color: darkMode ? "#fff" : "#000",
-              border: darkMode ? "1px solid #444" : "1px solid #ddd",
-            }}
+            style={inputStyle(darkMode)}
           />
 
           <input
@@ -149,24 +124,14 @@ const AuthPage = () => {
             placeholder="Password"
             onChange={handleChange}
             required
-            style={{
-              ...styles.input,
-              background: darkMode ? "#2a2a2a" : "#f9f9f9",
-              color: darkMode ? "#fff" : "#000",
-              border: darkMode ? "1px solid #444" : "1px solid #ddd",
-            }}
+            style={inputStyle(darkMode)}
           />
 
           {!isLogin && (
             <select
               name="role"
               onChange={handleChange}
-              style={{
-                ...styles.input,
-                background: darkMode ? "#2a2a2a" : "#f9f9f9",
-                color: darkMode ? "#fff" : "#000",
-                border: darkMode ? "1px solid #444" : "1px solid #ddd",
-              }}
+              style={inputStyle(darkMode)}
             >
               <option value="CUSTOMER">Customer</option>
               <option value="WORKER">Worker</option>
@@ -174,11 +139,7 @@ const AuthPage = () => {
           )}
 
           <button type="submit" disabled={loading} style={styles.primaryBtn}>
-            {loading
-              ? "Please wait..."
-              : isLogin
-              ? "Login"
-              : "Register"}
+            {loading ? "Please wait..." : isLogin ? "Login" : "Register"}
           </button>
         </form>
 
@@ -194,7 +155,15 @@ const AuthPage = () => {
 
 export default AuthPage;
 
-/* ------------------ STYLES (MATCH CUSTOMER UI) ------------------ */
+/* ---------- INPUT STYLE HELPER ---------- */
+const inputStyle = (darkMode) => ({
+  ...styles.input,
+  background: darkMode ? "#2a2a2a" : "#f9f9f9",
+  color: darkMode ? "#fff" : "#000",
+  border: darkMode ? "1px solid #444" : "1px solid #ddd",
+});
+
+/* ------------------ STYLES ------------------ */
 
 const styles = {
   page: {
