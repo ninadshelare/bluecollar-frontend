@@ -39,12 +39,29 @@ const AuthPage = () => {
     setError("");
     setLoading(true);
 
+<<<<<<< Updated upstream
     try {
       if (isLogin) {
         const res = await login({
           email: formData.email,
           password: formData.password,
         });
+=======
+                if (res.data.role === "ADMIN") navigate("/admin");
+                else if (res.data.role === "WORKER") navigate("/worker");
+                else navigate("/customer");
+            } else {
+                await register(formData);
+                alert("Registration successful! Please login.");
+                setIsLogin(true);
+            }
+        } catch (err) {
+            setError(err.response?.data?.message || "Something Went Wrong");
+        } finally {
+            setLoading(false);
+        }
+    };
+>>>>>>> Stashed changes
 
         localStorage.setItem("userId", res.data.userId);
         localStorage.setItem("role", res.data.role);
