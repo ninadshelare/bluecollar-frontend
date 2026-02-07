@@ -1,12 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "../../components/Navbar";
 import { updateWorkerProfile, deleteWorkerProfile } from "../../api/workerApi";
 import { useNavigate } from "react-router-dom";
 
 const WorkerProfile = () => {
   const navigate = useNavigate();
-  const workerId = localStorage.getItem("workerProfileId"); 
-  // ⚠️ This is NOT userId
+  const workerId = localStorage.getItem("workerProfileId");
 
   const [form, setForm] = useState({
     serviceName: "ELECTRICIAN",
@@ -18,11 +17,21 @@ const WorkerProfile = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const [darkMode, setDarkMode] = useState(
+    localStorage.getItem("theme") === "dark"
+  );
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setDarkMode(localStorage.getItem("theme") === "dark");
+    }, 200);
+    return () => clearInterval(interval);
+  }, []);
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  /* -------- UPDATE PROFILE -------- */
   const handleUpdate = async (e) => {
     e.preventDefault();
     setError("");
@@ -46,7 +55,6 @@ const WorkerProfile = () => {
     }
   };
 
-  /* -------- DELETE PROFILE -------- */
   const handleDelete = async () => {
     const confirmDelete = window.confirm(
       "Are you sure you want to delete your worker profile?"
@@ -57,7 +65,6 @@ const WorkerProfile = () => {
     try {
       await deleteWorkerProfile(workerId);
       alert("Profile deleted successfully");
-
       localStorage.removeItem("workerProfileId");
       navigate("/worker");
     } catch (err) {
@@ -69,59 +76,105 @@ const WorkerProfile = () => {
   return (
     <>
       <Navbar />
-      <div style={styles.container}>
-        <h2>Edit Worker Profile</h2>
 
-        {error && <p style={styles.error}>{error}</p>}
+      <div
+        style={{
+          ...styles.page,
+          background: darkMode
+            ? "linear-gradient(135deg,#1a1a1a,#121212)"
+            : "linear-gradient(135deg,#e3f2fd,#fce4ec)",
+        }}
+      >
+        <div
+          style={{
+            ...styles.card,
+            background: darkMode ? "#1e1e1e" : "#ffffff",
+            color: darkMode ? "#fff" : "#000",
+          }}
+        >
+          <h2 style={styles.heading}>Edit Worker Profile</h2>
 
-        <form onSubmit={handleUpdate} style={styles.form}>
-          {/* SERVICE */}
-          <input
-            name="serviceName"
-            value={form.serviceName}
-            onChange={handleChange}
-            style={styles.input}
-          />
+          {error && <p style={styles.error}>{error}</p>}
 
-          {/* EXPERIENCE */}
-          <input
-            type="number"
-            name="experienceYears"
-            value={form.experienceYears}
-            onChange={handleChange}
-            style={styles.input}
-          />
+          <form onSubmit={handleUpdate} style={styles.form}>
+            {/* SERVICE */}
+            <input
+              name="serviceName"
+              value={form.serviceName}
+              onChange={handleChange}
+              style={{
+                ...styles.input,
+                background: darkMode ? "#2a2a2a" : "#f9f9f9",
+                color: darkMode ? "#fff" : "#000",
+                border: darkMode
+                  ? "1px solid #444"
+                  : "1px solid #ddd",
+              }}
+            />
 
-          {/* PRICING TYPE */}
-          <select
-            name="pricingType"
-            value={form.pricingType}
-            onChange={handleChange}
-            style={styles.input}
-          >
-            <option value="HOURLY">Hourly</option>
-            <option value="FIXED">Fixed</option>
-          </select>
+            {/* EXPERIENCE */}
+            <input
+              type="number"
+              name="experienceYears"
+              value={form.experienceYears}
+              onChange={handleChange}
+              style={{
+                ...styles.input,
+                background: darkMode ? "#2a2a2a" : "#f9f9f9",
+                color: darkMode ? "#fff" : "#000",
+                border: darkMode
+                  ? "1px solid #444"
+                  : "1px solid #ddd",
+              }}
+            />
 
-          {/* PRICE */}
-          <input
-            type="number"
-            name="price"
-            value={form.price}
-            onChange={handleChange}
-            style={styles.input}
-          />
+            {/* PRICING TYPE DROPDOWN (Improved) */}
+            <select
+              name="pricingType"
+              value={form.pricingType}
+              onChange={handleChange}
+              style={{
+                ...styles.input,
+                background: darkMode ? "#2a2a2a" : "#f9f9f9",
+                color: darkMode ? "#fff" : "#000",
+                border: darkMode
+                  ? "1px solid #444"
+                  : "1px solid #ddd",
+                appearance: "none",
+                WebkitAppearance: "none",
+                MozAppearance: "none",
+                cursor: "pointer",
+              }}
+            >
+              <option value="HOURLY">Hourly</option>
+              <option value="FIXED">Fixed</option>
+            </select>
 
-          <button type="submit" disabled={loading} style={styles.updateBtn}>
-            {loading ? "Updating..." : "Update Profile"}
+            {/* PRICE */}
+            <input
+              type="number"
+              name="price"
+              value={form.price}
+              onChange={handleChange}
+              style={{
+                ...styles.input,
+                background: darkMode ? "#2a2a2a" : "#f9f9f9",
+                color: darkMode ? "#fff" : "#000",
+                border: darkMode
+                  ? "1px solid #444"
+                  : "1px solid #ddd",
+              }}
+            />
+
+            <button type="submit" disabled={loading} style={styles.updateBtn}>
+              {loading ? "Updating..." : "Update Profile"}
+            </button>
+          </form>
+
+          <button onClick={handleDelete} style={styles.deleteBtn}>
+            Delete Profile
           </button>
-        </form>
-
-        <hr />
-
-        <button onClick={handleDelete} style={styles.deleteBtn}>
-          Delete Profile
-        </button>
+        </div>
       </div>
     </>
   );
@@ -132,36 +185,67 @@ export default WorkerProfile;
 /* ---------- STYLES ---------- */
 
 const styles = {
-  container: {
-    maxWidth: 500,
-    margin: "auto",
-    padding: 20,
+  page: {
+    minHeight: "100vh",
+    padding: "80px 20px",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
   },
+
+  card: {
+    width: "100%",
+    maxWidth: "600px",
+    padding: "50px",
+    borderRadius: "30px",
+    boxShadow: "0 20px 40px rgba(0,0,0,0.15)",
+  },
+
+  heading: {
+    fontSize: "26px",
+    marginBottom: "30px",
+    textAlign: "center",
+    fontWeight: "600",
+  },
+
   form: {
     display: "flex",
     flexDirection: "column",
+    gap: "20px",
   },
+
   input: {
-    padding: 10,
-    marginBottom: 12,
+    padding: "18px",
+    borderRadius: "20px",
+    fontSize: "14px",
+    outline: "none",
   },
+
   updateBtn: {
-    padding: 12,
-    background: "#1976d2",
-    color: "#fff",
+    padding: "18px",
+    borderRadius: "25px",
     border: "none",
+    background: "linear-gradient(135deg,#7b1fa2,#42a5f5)",
+    color: "#fff",
+    fontSize: "16px",
+    fontWeight: "bold",
     cursor: "pointer",
   },
+
   deleteBtn: {
-    marginTop: 20,
-    padding: 12,
-    background: "#d32f2f",
-    color: "#fff",
+    marginTop: "20px",
+    padding: "18px",
+    borderRadius: "25px",
     border: "none",
+    background: "#ef5350",
+    color: "#fff",
+    fontSize: "15px",
     cursor: "pointer",
   },
+
   error: {
-    color: "red",
-    marginBottom: 10,
+    color: "#ff5252",
+    marginBottom: "15px",
+    textAlign: "center",
   },
 };

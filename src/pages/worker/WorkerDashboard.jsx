@@ -4,6 +4,10 @@ import axiosInstance from "../../api/axiosInstance";
 import { useNavigate } from "react-router-dom";
 import { getWorkerEarnings } from "../../api/workerApi";
 
+import workerBanner from "../../assets/workerDashboard/workerBannerPremium.png";
+import workerMyJobs from "../../assets/workerDashboard/workerMyJobs.png";
+import workerProfileUpdate from "../../assets/workerDashboard/workerProfileUpdate.png";
+
 const WorkerDashboard = () => {
   const navigate = useNavigate();
   const userId = localStorage.getItem("userId");
@@ -11,37 +15,54 @@ const WorkerDashboard = () => {
   const [profile, setProfile] = useState(null);
   const [earnings, setEarnings] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [statsVisible, setStatsVisible] = useState(false);
+
 
   const [darkMode, setDarkMode] = useState(
     localStorage.getItem("theme") === "dark"
   );
 
-  /* 🔁 THEME SYNC */
+  const [themeAnimating, setThemeAnimating] = useState(false);
+
+  /* ================= THEME SYNC WITH ANIMATION ================= */
   useEffect(() => {
     const interval = setInterval(() => {
-      setDarkMode(localStorage.getItem("theme") === "dark");
-    }, 200);
-    return () => clearInterval(interval);
-  }, []);
+      const currentTheme = localStorage.getItem("theme") === "dark";
 
-  /* 👤 LOAD PROFILE */
+      if (currentTheme !== darkMode) {
+        setThemeAnimating(true);
+        setTimeout(() => setThemeAnimating(false), 400);
+      }
+
+      setDarkMode(currentTheme);
+    }, 200);
+
+    return () => clearInterval(interval);
+  }, [darkMode]);
+  useEffect(() => {
+  setTimeout(() => setStatsVisible(true), 300);
+}, []);
+
+  /* ================= GREETING ================= */
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good Morning ☀️";
+    if (hour < 18) return "Good Afternoon 🌤️";
+    return "Good Evening 🌙";
+  };
+
+  /* ================= LOAD PROFILE ================= */
   useEffect(() => {
     axiosInstance
       .get(`/api/workers/profile/by-user/${userId}`)
       .then((res) => {
         setProfile(res.data);
-        localStorage.setItem("workerProfileId", res.data.workerId);
-
-        // 🔥 LOAD EARNINGS
         return getWorkerEarnings(res.data.workerId);
       })
-      .then((res) => {
-        setEarnings(res.data);
-      })
+      .then((res) => setEarnings(res.data))
       .catch(() => {
         setProfile(null);
         setEarnings(null);
-        localStorage.removeItem("workerProfileId");
       })
       .finally(() => setLoading(false));
   }, [userId]);
@@ -50,7 +71,7 @@ const WorkerDashboard = () => {
     return (
       <>
         <Navbar />
-        <div style={{ padding: 40, textAlign: "center" }}>Loading...</div>
+        <div style={{ padding: 60, textAlign: "center" }}>Loading...</div>
       </>
     );
   }
@@ -62,111 +83,91 @@ const WorkerDashboard = () => {
       <div
         style={{
           ...styles.wrapper,
-          background: darkMode ? "#121212" : "#f4f6f9",
+          background: darkMode ? "#121212" : "#f5f7fb",
           color: darkMode ? "#fff" : "#000",
+          transform: themeAnimating ? "scale(0.98)" : "scale(1)",
+          opacity: themeAnimating ? 0.95 : 1,
         }}
       >
-        {/* 🔥 HERO */}
-        <div style={styles.hero}>
+        {/* ================= HERO ================= */}
+        <div
+          style={{
+            ...styles.hero,
+            backgroundImage: `url(${workerBanner})`,
+          }}
+        >
           <div
             style={{
               ...styles.overlay,
               background: darkMode
-                ? "rgba(0,0,0,0.75)"
-                : "rgba(0,0,0,0.5)",
+                ? "rgba(0,0,0,0.65)"
+                : "rgba(0,0,0,0.45)",
             }}
           />
+
           <div style={styles.heroContent}>
             <div>
-              <h1 style={{ fontSize: 36 }}>Welcome Back 👷</h1>
-              <p>Track jobs, earnings and performance</p>
+              <h2 style={{ fontWeight: 400 }}>{getGreeting()},</h2>
+              <h1 style={styles.heroTitle}>
+                {profile?.name || "Worker"} 👋
+              </h1>
+              <p style={{ marginTop: 10 }}>
+                Manage your jobs and track earnings easily
+              </p>
             </div>
-            <img
-              src="https://cdn-icons-png.flaticon.com/512/1995/1995574.png"
-              alt="worker"
-              style={styles.heroImage}
-            />
           </div>
         </div>
 
-        {/* 📊 EARNINGS STATS */}
+        {/* ================= STATS ================= */}
         {earnings && (
-          <div style={styles.statsContainer}>
-            <StatCard
-              title="Total Earnings"
-              value={`₹ ${earnings.totalEarnings}`}
-              darkMode={darkMode}
-            />
-            <StatCard
-              title="Paid"
-              value={`₹ ${earnings.paidEarnings}`}
-              darkMode={darkMode}
-            />
-            <StatCard
-              title="Pending"
-              value={`₹ ${earnings.pendingEarnings}`}
-              darkMode={darkMode}
-            />
-            <StatCard
-              title="Jobs Completed"
-              value={earnings.totalJobs}
-              darkMode={darkMode}
-            />
-          </div>
-        )}
+  <div style={styles.statsGrid}>
+    <AnimatedStatCard
+      title="Total Earnings"
+      value={`₹ ${earnings.totalEarnings}`}
+      delay={0}
+      darkMode={darkMode}
+      visible={statsVisible}
+    />
+    <AnimatedStatCard
+      title="Paid"
+      value={`₹ ${earnings.paidEarnings}`}
+      delay={150}
+      darkMode={darkMode}
+      visible={statsVisible}
+    />
+    <AnimatedStatCard
+      title="Pending"
+      value={`₹ ${earnings.pendingEarnings}`}
+      delay={300}
+      darkMode={darkMode}
+      visible={statsVisible}
+    />
+    <AnimatedStatCard
+      title="Jobs Completed"
+      value={earnings.totalJobs}
+      delay={450}
+      darkMode={darkMode}
+      visible={statsVisible}
+    />
+  </div>
+)}
 
-        {/* 👤 PROFILE */}
-        {profile && (
-          <div
-            style={{
-              ...styles.profileCard,
-              background: darkMode ? "#1e1e1e" : "#fff",
-            }}
-          >
-            <img
-              src="https://cdn-icons-png.flaticon.com/512/2922/2922510.png"
-              alt="avatar"
-              style={styles.avatar}
-            />
-            <div>
-              <h3>{profile.name}</h3>
-              <p style={{ opacity: 0.7 }}>{profile.workerType}</p>
-            </div>
-          </div>
-        )}
 
-        {/* 🧩 FEATURES */}
-        <div style={styles.cardContainer}>
+        {/* ================= FEATURE CARDS ================= */}
+        <div style={styles.cardGrid}>
           <FeatureCard
             title="My Jobs"
-            image="https://cdn-icons-png.flaticon.com/512/942/942748.png"
-            darkMode={darkMode}
+            image={workerMyJobs}
             onClick={() => navigate("/worker/jobs")}
+            darkMode={darkMode}
           />
 
           <FeatureCard
             title="Update Profile"
-            image="https://cdn-icons-png.flaticon.com/512/1828/1828911.png"
-            darkMode={darkMode}
+            image={workerProfileUpdate}
             onClick={() => navigate("/worker/profile")}
+            darkMode={darkMode}
           />
-
-          {profile?.workerType === "MAID" && (
-            <>
-              <FeatureCard
-                title="Attendance"
-                image="https://cdn-icons-png.flaticon.com/512/747/747310.png"
-                darkMode={darkMode}
-                onClick={() => navigate("/worker/attendance")}
-              />
-              <FeatureCard
-                title="Salary"
-                image="https://cdn-icons-png.flaticon.com/512/2331/2331970.png"
-                darkMode={darkMode}
-                onClick={() => navigate("/worker/salary")}
-              />
-            </>
-          )}
         </div>
       </div>
     </>
@@ -175,7 +176,7 @@ const WorkerDashboard = () => {
 
 export default WorkerDashboard;
 
-/* ---------- COMPONENTS ---------- */
+/* ================= COMPONENTS ================= */
 
 const StatCard = ({ title, value, darkMode }) => (
   <div
@@ -186,7 +187,7 @@ const StatCard = ({ title, value, darkMode }) => (
     }}
   >
     <p style={{ opacity: 0.7 }}>{title}</p>
-    <h2>{value}</h2>
+    <h2 style={{ marginTop: 8 }}>{value}</h2>
   </div>
 );
 
@@ -198,90 +199,137 @@ const FeatureCard = ({ title, image, onClick, darkMode }) => (
       color: darkMode ? "#fff" : "#000",
     }}
     onClick={onClick}
-    onMouseEnter={(e) =>
-      (e.currentTarget.style.transform = "translateY(-8px)")
-    }
-    onMouseLeave={(e) =>
-      (e.currentTarget.style.transform = "translateY(0px)")
-    }
+    onMouseEnter={(e) => {
+      e.currentTarget.style.transform = "translateY(-6px)";
+      e.currentTarget.style.boxShadow =
+        "0 20px 40px rgba(15, 76, 129, 0.2)";
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.transform = "translateY(0)";
+      e.currentTarget.style.boxShadow =
+        "0 10px 25px rgba(0,0,0,0.08)";
+    }}
   >
-    <img src={image} alt={title} style={styles.cardImage} />
-    <h4>{title}</h4>
+    <div style={styles.imageWrapper}>
+      <img src={image} alt={title} style={styles.cardImage} />
+    </div>
+    <h3 style={{ marginTop: 20 }}>{title}</h3>
   </div>
 );
 
-/* ---------- STYLES ---------- */
+
+/* ================= STYLES ================= */
 
 const styles = {
   wrapper: {
-    padding: "30px 60px",
+    padding: "40px 70px",
     minHeight: "100vh",
-    transition: "0.3s",
+    transition:
+      "background 0.4s ease, color 0.4s ease, transform 0.4s ease, opacity 0.4s ease",
   },
+
   hero: {
     position: "relative",
-    height: 220,
-    borderRadius: 20,
+    borderRadius: 24,
     overflow: "hidden",
-    marginBottom: 40,
-    backgroundImage:
-      "url('https://images.unsplash.com/photo-1521791136064-7986c2920216')",
+    marginBottom: 50,
+    padding: "50px 60px",
+    minHeight: 180,
+    display: "flex",
+    alignItems: "center",
     backgroundSize: "cover",
+    backgroundPosition: "center",
+    color: "#fff",
   },
+
   overlay: {
     position: "absolute",
     inset: 0,
+    transition: "background 0.4s ease",
   },
+
   heroContent: {
     position: "relative",
     zIndex: 2,
-    color: "#fff",
-    padding: "40px 50px",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  heroImage: { width: 120 },
-
-  statsContainer: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))",
-    gap: 25,
-    marginBottom: 40,
-  },
-  statCard: {
-    padding: 22,
-    borderRadius: 18,
-    textAlign: "center",
-    boxShadow: "0 6px 18px rgba(0,0,0,0.1)",
   },
 
-  profileCard: {
-    display: "flex",
-    alignItems: "center",
-    gap: 20,
-    padding: 20,
-    borderRadius: 18,
-    marginBottom: 30,
-    boxShadow: "0 6px 18px rgba(0,0,0,0.1)",
+  heroTitle: {
+    fontSize: 36,
+    fontWeight: 600,
   },
-  avatar: { width: 70 },
 
-  cardContainer: {
+  statsGrid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))",
+    gap: 25,
+    marginBottom: 60,
+  },
+
+  statCard: {
+    padding: 25,
+    borderRadius: 20,
+    boxShadow: "0 10px 25px rgba(0,0,0,0.08)",
+    transition: "background 0.4s ease, color 0.4s ease",
+  },
+
+  cardGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))",
     gap: 30,
   },
+
   card: {
-    padding: 30,
-    borderRadius: 18,
+    padding: 35,
+    borderRadius: 22,
     textAlign: "center",
     cursor: "pointer",
-    boxShadow: "0 8px 20px rgba(0,0,0,0.08)",
-    transition: "0.3s",
+    boxShadow: "0 10px 25px rgba(0,0,0,0.08)",
+    transition:
+      "background 0.4s ease, color 0.4s ease, transform 0.3s ease",
   },
+
+  imageWrapper: {
+    width: 110,
+    height: 110,
+    margin: "0 auto",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
   cardImage: {
-    width: 80,
-    marginBottom: 15,
+    maxWidth: "100%",
+    maxHeight: "100%",
+    objectFit: "contain",
   },
 };
+
+const AnimatedStatCard = ({ title, value, delay, darkMode, visible }) => {
+  return (
+    <div
+      style={{
+        ...styles.statCard,
+        background: darkMode ? "#1e1e1e" : "#fff",
+        color: darkMode ? "#fff" : "#000",
+        transform: visible ? "translateY(0px)" : "translateY(30px)",
+        opacity: visible ? 1 : 0,
+        transition: `all 0.6s ease ${delay}ms`,
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = "translateY(-8px)";
+        e.currentTarget.style.boxShadow =
+          "0 20px 40px rgba(15, 76, 129, 0.25)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = "translateY(0px)";
+        e.currentTarget.style.boxShadow =
+          "0 10px 25px rgba(0,0,0,0.08)";
+      }}
+    >
+      <p style={{ opacity: 0.7 }}>{title}</p>
+      <h2 style={{ marginTop: 8 }}>{value}</h2>
+    </div>
+  );
+};
+
+  
