@@ -30,10 +30,16 @@ const CustomerRequests = () => {
     fetchRequests();
   }, []);
 
+  /* ---------- FETCH REQUESTS (LATEST FIRST) ---------- */
   const fetchRequests = async () => {
     try {
       const res = await getCustomerRequests(customerId);
-      setRequests(res.data || []);
+
+      const sorted = [...(res.data || [])].sort(
+        (a, b) => b.requestId - a.requestId
+      );
+
+      setRequests(sorted);
     } catch {
       alert("Failed to load requests");
     } finally {
@@ -72,7 +78,7 @@ const CustomerRequests = () => {
         comment: data.comment || "",
       });
 
-      // ✅ Instant UI update
+      // ✅ Instant UI update (feedback won't reappear after reload)
       setRequests((prev) =>
         prev.map((req) =>
           req.requestId === requestId
@@ -115,7 +121,11 @@ const CustomerRequests = () => {
             My Service Requests
           </h2>
 
-          {loading && <p style={{ color: darkMode ? "#ccc" : "#000" }}>Loading...</p>}
+          {loading && (
+            <p style={{ color: darkMode ? "#ccc" : "#000" }}>
+              Loading...
+            </p>
+          )}
 
           {!loading && requests.length === 0 && (
             <p style={{ color: darkMode ? "#ccc" : "#000" }}>
@@ -292,54 +302,45 @@ const styles = {
     display: "flex",
     justifyContent: "center",
   },
-
   container: {
     width: "100%",
     maxWidth: "1000px",
   },
-
   heading: {
     fontSize: "30px",
     marginBottom: "35px",
   },
-
   card: {
     borderRadius: "28px",
     padding: "26px",
     marginBottom: "28px",
     transition: "0.3s",
   },
-
   cardHeader: {
     display: "flex",
     justifyContent: "space-between",
     marginBottom: "18px",
   },
-
   service: {
     fontSize: "20px",
     marginBottom: "6px",
   },
-
   statusPill: {
     padding: "6px 16px",
     borderRadius: "20px",
     fontSize: "13px",
     fontWeight: "600",
   },
-
   sectionCard: {
     marginTop: "20px",
     padding: "18px",
     borderRadius: "20px",
   },
-
   row: {
     display: "flex",
     justifyContent: "space-between",
     marginTop: "6px",
   },
-
   textarea: {
     width: "100%",
     minHeight: "80px",
@@ -348,7 +349,6 @@ const styles = {
     borderRadius: "16px",
     resize: "none",
   },
-
   submitBtn: {
     marginTop: "14px",
     padding: "12px 22px",
@@ -359,7 +359,6 @@ const styles = {
     fontWeight: "bold",
     cursor: "pointer",
   },
-
   payBtn: {
     marginTop: "14px",
     padding: "12px 22px",
@@ -369,7 +368,6 @@ const styles = {
     fontWeight: "bold",
     cursor: "pointer",
   },
-
   successBox: {
     marginTop: "20px",
     padding: "14px",
