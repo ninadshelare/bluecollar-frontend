@@ -283,7 +283,5 @@ const styles = {
     marginRight: 8,
     fontSize: 14,
   },
-};};
 };
 
-//commit
