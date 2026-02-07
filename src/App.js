@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import AuthPage from "./auth/AuthPage";
 import ProtectedRoute from "./auth/ProtectedRoute";
 import BookService from "./pages/customer/BookService";
+import Login from "./auth/Login";
 
 
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -15,6 +16,7 @@ import CustomerProfile from "./pages/customer/CustomerProfile";
 import CustomerRequests from "./pages/customer/CustomerRequests";
 import MaidAttendance from "./pages/worker/MaidAttendance";
 import MaidSalary from "./pages/worker/MaidSalary";
+//import Login from "./auth/Login";
 
 
 
@@ -23,7 +25,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<AuthPage />} />
-        <Route path="/login" element={<AuthPage />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/worker/attendance" element={<MaidAttendance />} />
         <Route path="/worker/salary" element={<MaidSalary />} />
 
