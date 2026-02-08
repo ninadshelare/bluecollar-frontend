@@ -21,3 +21,10 @@ export const getWorkerEarnings = (workerId) => {
     `/api/workers/${workerId}/earnings`
   );
 };
+
+/* ---------- 🔥 ADD THIS (DO NOT REMOVE OTHERS) ---------- */
+export const getWorkerProfileByUser = (userId) => {
+  return axiosInstance.get(
+    `/api/workers/profile/by-user/${userId}`
+  );
+};

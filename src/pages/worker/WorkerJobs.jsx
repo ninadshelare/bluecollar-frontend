@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import Navbar from "../../components/Navbar";
 import {
@@ -5,32 +6,65 @@ import {
   acceptJob,
   completeJob,
 } from "../../api/workRequestApi";
+import { getWorkerProfileByUser } from "../../api/workerApi";
 
 const WorkerJobs = () => {
-  const workerId = localStorage.getItem("workerProfileId");
+  const userId = Number(localStorage.getItem("userId"));
+
+  const [workerId, setWorkerId] = useState(
+    Number(localStorage.getItem("workerProfileId"))
+  );
 
   const [jobs, setJobs] = useState([]);
   const [hoursWorked, setHoursWorked] = useState({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  /* ================= RESTORE workerProfileId ================= */
+  useEffect(() => {
+    const restoreWorkerProfile = async () => {
+      if (workerId && !isNaN(workerId)) return;
+
+      if (!userId) {
+        setError("User not logged in");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const res = await getWorkerProfileByUser(userId);
+        localStorage.setItem("workerProfileId", res.data.workerId);
+        setWorkerId(res.data.workerId);
+      } catch (err) {
+        console.error(err);
+        setError("Worker profile not found");
+        setLoading(false);
+      }
+    };
+
+    restoreWorkerProfile();
+  }, [workerId, userId]);
+  /* =========================================================== */
 
   const fetchJobs = async () => {
+    if (!workerId || isNaN(workerId)) return;
+
     try {
+      setLoading(true);
       const res = await getWorkerJobs(workerId);
-      const jobList = Array.isArray(res.data)
-        ? res.data
-        : res.data?.data || [];
-      setJobs(jobList);
+      setJobs(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
-      console.error("Failed to load jobs", err);
-      alert("Failed to load jobs");
+      console.error(err);
+      setError("Failed to load jobs");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (!workerId) return;
-    fetchJobs();
+    if (workerId && !isNaN(workerId)) {
+      fetchJobs();
+    }
   }, [workerId]);
 
   const handleAccept = async (requestId) => {
@@ -44,10 +78,12 @@ const WorkerJobs = () => {
 
   const handleComplete = async (job) => {
     try {
-      if (job.pricingType === "HOURLY") {
+      const pricingType = job.pricing?.[0]?.pricingType;
+
+      if (pricingType === "HOURLY") {
         const hours = Number(hoursWorked[job.requestId]);
         if (!hours || hours <= 0) {
-          alert("Please enter valid hours worked");
+          alert("Enter valid hours worked");
           return;
         }
         await completeJob(job.requestId, hours);
@@ -55,13 +91,36 @@ const WorkerJobs = () => {
         await completeJob(job.requestId);
       }
 
-      alert("Job completed & payment generated");
+      alert("Job completed");
       fetchJobs();
-    } catch (err) {
-      console.error(err);
+    } catch {
       alert("Failed to complete job");
     }
   };
+
+  /* ================= UI STATES ================= */
+
+  if (loading) {
+    return (
+      <>
+        <Navbar />
+        <p style={{ textAlign: "center", marginTop: 80 }}>
+          Loading jobs…
+        </p>
+      </>
+    );
+  }
+
+  if (error) {
+    return (
+      <>
+        <Navbar />
+        <p style={{ textAlign: "center", marginTop: 80, color: "red" }}>
+          {error}
+        </p>
+      </>
+    );
+  }
 
   return (
     <>
@@ -70,86 +129,90 @@ const WorkerJobs = () => {
         <div style={styles.container}>
           <h1 style={styles.heading}>My Assigned Jobs</h1>
 
-          {loading && <p style={styles.message}>Loading jobs...</p>}
-          {!loading && jobs.length === 0 && (
+          {jobs.length === 0 && (
             <p style={styles.message}>No jobs assigned yet</p>
           )}
 
           <div style={styles.grid}>
-            {jobs.map((job) => (
-              <div key={job.requestId} style={styles.card}>
-                <div style={styles.topRow}>
-                  <h3 style={styles.service}>{job.serviceName}</h3>
-                  <span style={statusBadge(job.status)}>
-                    {job.status}
-                  </span>
-                </div>
+            {jobs.map((job) => {
+              const pricingType = job.pricing?.[0]?.pricingType;
 
-                <p style={styles.text}>
-                  <strong>Customer:</strong> {job.customer?.name}
-                </p>
-
-                <p style={styles.text}>
-                  <strong>Pricing:</strong> {job.pricingType}
-                </p>
-
-                {/* ================== ADDRESS & CONTACT (ONLY AFTER ACCEPT) ================== */}
-                {job.status === "ACCEPTED" && job.customer && (
-                  <div style={styles.addressBox}>
-                    <p style={styles.text}>
-                      <strong>📞 Contact:</strong> {job.customer.phone}
-                    </p>
-
-                    <p style={styles.text}>
-                      <strong>📍 Address:</strong><br />
-                      {job.customer.addressLine1}, {job.customer.addressLine2}<br />
-                      {job.customer.city}, {job.customer.state} - {job.customer.pincode}
-                    </p>
+              return (
+                <div key={job.requestId} style={styles.card}>
+                  <div style={styles.topRow}>
+                    <h3 style={styles.service}>{job.serviceName}</h3>
+                    <span style={statusBadge(job.status)}>
+                      {job.status}
+                    </span>
                   </div>
-                )}
 
-                {/* ================== ACTION BUTTONS ================== */}
-                {job.status === "PENDING" && (
-                  <button
-                    onClick={() => handleAccept(job.requestId)}
-                    style={styles.primaryBtn}
-                  >
-                    Accept Job
-                  </button>
-                )}
+                  <p style={styles.text}>
+                    <strong>Customer:</strong>{" "}
+                    {job.customer?.name || "Unknown"}
+                  </p>
 
-                {job.status === "ACCEPTED" && (
-                  <div style={{ marginTop: 15 }}>
-                    {job.pricingType === "HOURLY" && (
-                      <input
-                        type="number"
-                        placeholder="Hours worked"
-                        min="1"
-                        value={hoursWorked[job.requestId] || ""}
-                        onChange={(e) =>
-                          setHoursWorked({
-                            ...hoursWorked,
-                            [job.requestId]: e.target.value,
-                          })
-                        }
-                        style={styles.input}
-                      />
-                    )}
+                  <p style={styles.text}>
+                    <strong>Pricing:</strong>{" "}
+                    {pricingType || "N/A"}
+                  </p>
 
+                  {job.status === "ACCEPTED" && job.customer && (
+                    <div style={styles.addressBox}>
+                      <p style={styles.text}>
+                        <strong>📞 Contact:</strong>{" "}
+                        {job.customer.phone || "Not provided"}
+                      </p>
+                      <p style={styles.text}>
+                        <strong>📍 Address:</strong><br />
+                        {job.customer.addressLine1 || "-"}{" "}
+                        {job.customer.addressLine2 || ""}<br />
+                        {job.customer.city || "-"},{" "}
+                        {job.customer.state || "-"}{" "}
+                        {job.customer.pincode || ""}
+                      </p>
+                    </div>
+                  )}
+
+                  {job.status === "PENDING" && (
                     <button
-                      onClick={() => handleComplete(job)}
-                      style={styles.successBtn}
+                      onClick={() => handleAccept(job.requestId)}
+                      style={styles.primaryBtn}
                     >
-                      Complete Job
+                      Accept Job
                     </button>
-                  </div>
-                )}
+                  )}
 
-                {job.status === "COMPLETED" && (
-                  <p style={styles.completed}>✔ Job Completed</p>
-                )}
-              </div>
-            ))}
+                  {job.status === "ACCEPTED" && (
+                    <>
+                      {pricingType === "HOURLY" && (
+                        <input
+                          type="number"
+                          placeholder="Hours worked"
+                          value={hoursWorked[job.requestId] || ""}
+                          onChange={(e) =>
+                            setHoursWorked({
+                              ...hoursWorked,
+                              [job.requestId]: e.target.value,
+                            })
+                          }
+                          style={styles.input}
+                        />
+                      )}
+                      <button
+                        onClick={() => handleComplete(job)}
+                        style={styles.successBtn}
+                      >
+                        Complete Job
+                      </button>
+                    </>
+                  )}
+
+                  {job.status === "COMPLETED" && (
+                    <p style={styles.completed}>✔ Job Completed</p>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -159,8 +222,8 @@ const WorkerJobs = () => {
 
 export default WorkerJobs;
 
-/* ---------- STATUS BADGE ---------- */
 
+/* ---------- STATUS BADGE ---------- */
 const statusBadge = (status) => ({
   padding: "6px 14px",
   borderRadius: "30px",
@@ -177,19 +240,16 @@ const statusBadge = (status) => ({
 });
 
 /* ---------- STYLES ---------- */
-
 const styles = {
   page: {
     minHeight: "100vh",
     background: "linear-gradient(120deg, #f0f4ff, #f8fafc)",
     padding: "50px 20px",
   },
-
   container: {
     maxWidth: 1100,
     margin: "auto",
   },
-
   heading: {
     color: "#1e293b",
     marginBottom: 35,
@@ -197,18 +257,15 @@ const styles = {
     fontWeight: "700",
     fontSize: 28,
   },
-
   message: {
     textAlign: "center",
     color: "#64748b",
   },
-
   grid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
     gap: 24,
   },
-
   card: {
     background: "#ffffff",
     borderRadius: 18,
@@ -216,27 +273,23 @@ const styles = {
     boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
     border: "1px solid #f1f5f9",
   },
-
   topRow: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 15,
   },
-
   service: {
     margin: 0,
     fontWeight: "700",
     fontSize: 18,
     color: "#0f172a",
   },
-
   text: {
     margin: "8px 0",
     fontSize: 14,
     color: "#475569",
   },
-
   addressBox: {
     marginTop: 12,
     padding: 12,
@@ -244,7 +297,6 @@ const styles = {
     background: "#f8fafc",
     border: "1px dashed #cbd5e1",
   },
-
   primaryBtn: {
     marginTop: 18,
     background: "#2563eb",
@@ -256,7 +308,6 @@ const styles = {
     fontWeight: "600",
     fontSize: 14,
   },
-
   successBtn: {
     marginTop: 14,
     background: "#16a34a",
@@ -268,14 +319,12 @@ const styles = {
     fontWeight: "600",
     fontSize: 14,
   },
-
   completed: {
     marginTop: 14,
     color: "#16a34a",
     fontWeight: "600",
     fontSize: 14,
   },
-
   input: {
     padding: "9px 12px",
     borderRadius: 8,
@@ -284,4 +333,3 @@ const styles = {
     fontSize: 14,
   },
 };
-
