@@ -298,8 +298,8 @@ const styles = {
   },
 
   cardImage: {
-    maxWidth: "100%",
-    maxHeight: "100%",
+    maxWidth: "350%",
+    maxHeight: "300%",
     objectFit: "contain",
   },
 };

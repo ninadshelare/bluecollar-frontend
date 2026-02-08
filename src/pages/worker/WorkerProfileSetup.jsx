@@ -7,8 +7,6 @@ const SERVICE_MAP = {
   PLUMBER: { workerType: "SKILLED", pricingType: "PER_JOB" },
   PAINTER: { workerType: "SKILLED", pricingType: "PER_JOB" },
   CARPENTER: { workerType: "SKILLED", pricingType: "PER_JOB" },
-  LABOUR: { workerType: "LABOUR", pricingType: "HOURLY" },
-  MAID: { workerType: "MAID", pricingType: "MONTHLY" },
 };
 
 const WorkerProfileSetup = () => {
@@ -36,7 +34,31 @@ const WorkerProfileSetup = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
-  /* -------- LOAD PROFILE -------- */
+  /* ===== PREMIUM DARK MODE (SAME AS DASHBOARD) ===== */
+  const [darkMode, setDarkMode] = useState(
+    localStorage.getItem("theme") === "dark"
+  );
+
+  const [themeAnimating, setThemeAnimating] = useState(false);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const currentTheme = localStorage.getItem("theme") === "dark";
+
+      if (currentTheme !== darkMode) {
+        setThemeAnimating(true);
+        setTimeout(() => setThemeAnimating(false), 400);
+      }
+
+      setDarkMode(currentTheme);
+    }, 200);
+
+    return () => clearInterval(interval);
+  }, [darkMode]);
+
+  const styles = getStyles(darkMode);
+
+  /* ===== LOAD PROFILE ===== */
   useEffect(() => {
     axiosInstance
       .get(`/api/workers/profile/by-user/${userId}`)
@@ -56,7 +78,7 @@ const WorkerProfileSetup = () => {
       .finally(() => setLoading(false));
   }, [userId]);
 
-  /* -------- CLOSE DROPDOWN -------- */
+  /* ===== CLOSE DROPDOWN ===== */
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -82,14 +104,11 @@ const WorkerProfileSetup = () => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  /* -------- CONFIRM -------- */
   const openConfirm = (type) => {
     setConfirmType(type);
     setShowConfirm(true);
   };
-  
 
-  /* -------- EXECUTE UPDATE / DELETE -------- */
   const executeAction = async () => {
     setShowConfirm(false);
     setSaving(true);
@@ -122,7 +141,6 @@ const WorkerProfileSetup = () => {
     }
   };
 
-  /* -------- DIRECT CREATE -------- */
   const executeDirectCreate = async () => {
     if (!form.serviceName || !form.price || !form.experienceYears) {
       setError("All fields are required");
@@ -162,14 +180,21 @@ const WorkerProfileSetup = () => {
     <>
       <Navbar />
 
-      <div style={styles.page}>
+      <div
+        style={{
+          ...styles.page,
+          background: darkMode ? "#121212" : styles.page.background,
+          transform: themeAnimating ? "scale(0.98)" : "scale(1)",
+          opacity: themeAnimating ? 0.95 : 1,
+          transition: "all 0.4s ease",
+        }}
+      >
         <div style={styles.card}>
           <h2 style={styles.heading}>Worker Profile</h2>
 
           {error && <p style={styles.error}>{error}</p>}
 
           <form style={styles.grid}>
-            {/* DROPDOWN */}
             <div style={styles.dropdownWrapper} ref={dropdownRef}>
               <div
                 style={styles.dropdownHeader}
@@ -186,13 +211,6 @@ const WorkerProfileSetup = () => {
                       key={service}
                       style={styles.dropdownItem}
                       onClick={() => handleServiceSelect(service)}
-                      onMouseEnter={(e) =>
-                        (e.currentTarget.style.background =
-                          "rgba(66,165,245,0.15)")
-                      }
-                      onMouseLeave={(e) =>
-                        (e.currentTarget.style.background = "transparent")
-                      }
                     >
                       {service}
                     </div>
@@ -237,14 +255,17 @@ const WorkerProfileSetup = () => {
 
             <button
               type="button"
+              disabled={saving}
               onClick={() =>
-                profileExists
-                  ? openConfirm("update")
-                  : executeDirectCreate()
+                profileExists ? openConfirm("update") : executeDirectCreate()
               }
               style={styles.primaryBtn}
             >
-              {profileExists ? "Update Profile" : "Create Profile"}
+              {saving
+                ? "Processing..."
+                : profileExists
+                ? "Update Profile"
+                : "Create Profile"}
             </button>
 
             {profileExists && (
@@ -260,73 +281,47 @@ const WorkerProfileSetup = () => {
         </div>
       </div>
 
-      {/* CONFIRM MODAL */}
-      {/* CONFIRM MODAL */}
-{showConfirm && (
-  <div style={styles.overlay}>
-    <div style={styles.popup}>
-      <div style={styles.iconCircle}>
-        {confirmType === "delete" ? "⚠️" : "✏️"}
-      </div>
+      {showConfirm && (
+        <div style={styles.overlay}>
+          <div style={styles.popup}>
+            <div style={styles.iconCircle}>
+              {confirmType === "delete" ? "⚠️" : "✏️"}
+            </div>
+            <h3 style={styles.popupTitle}>
+              {confirmType === "delete"
+                ? "Delete Profile?"
+                : "Update Profile?"}
+            </h3>
+            <p style={styles.popupText}>
+              {confirmType === "delete"
+                ? "This action cannot be undone."
+                : "Your profile details will be updated."}
+            </p>
+            <div style={styles.popupActions}>
+              <button onClick={executeAction} style={styles.confirmBtn}>
+                Yes, Continue
+              </button>
+              <button
+                onClick={() => setShowConfirm(false)}
+                style={styles.cancelBtn}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-      <h3 style={styles.popupTitle}>
-        {confirmType === "delete"
-          ? "Delete Profile?"
-          : "Update Profile?"}
-      </h3>
-
-      <p style={styles.popupText}>
-        {confirmType === "delete"
-          ? "This action cannot be undone."
-          : "Your profile details will be updated."}
-      </p>
-
-      <div style={styles.popupActions}>
-        <button onClick={executeAction} style={styles.confirmBtn}>
-          Yes, Continue
-        </button>
-
-        <button
-          onClick={() => setShowConfirm(false)}
-          style={styles.cancelBtn}
-        >
-          Cancel
-        </button>
-      </div>
-    </div>
-  </div>
-)}
-
-
-{/* SUCCESS MODAL */}
-{showSuccess && (
-  <div style={styles.overlay}>
-    <div style={styles.popup}>
-      <div style={styles.successIcon}>✓</div>
-
-      <h3 style={styles.popupTitle}>{successMessage}</h3>
-
-      <button
-        onClick={() => setShowSuccess(false)}
-        style={{ ...styles.confirmBtn, marginTop: 20 }}
-      >
-        Awesome!
-      </button>
-    </div>
-  </div>
-)}
-
-
-      {/* SUCCESS MODAL */}
       {showSuccess && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modal}>
-            <h3>{successMessage}</h3>
+        <div style={styles.overlay}>
+          <div style={styles.popup}>
+            <div style={styles.successIcon}>✓</div>
+            <h3 style={styles.popupTitle}>{successMessage}</h3>
             <button
               onClick={() => setShowSuccess(false)}
-              style={{ ...styles.primaryBtn, marginTop: 20 }}
+              style={{ ...styles.confirmBtn, marginTop: 20 }}
             >
-              OK
+              Okay
             </button>
           </div>
         </div>
@@ -337,9 +332,8 @@ const WorkerProfileSetup = () => {
 
 export default WorkerProfileSetup;
 
-/* ---------- PREMIUM STYLES ---------- */
-
-const styles = {
+/* ===== PREMIUM DARK COLORS MATCHING DASHBOARD ===== */
+const getStyles = (isDark) => ({
   page: {
     minHeight: "100vh",
     padding: "80px 20px",
@@ -354,8 +348,11 @@ const styles = {
     maxWidth: "750px",
     padding: "50px",
     borderRadius: "30px",
-    background: "#ffffff",
-    boxShadow: "0 25px 60px rgba(0,0,0,0.15)",
+    background: isDark ? "#1e1e1e" : "#ffffff",
+    boxShadow: isDark
+      ? "0 25px 60px rgba(0,0,0,0.6)"
+      : "0 25px 60px rgba(0,0,0,0.15)",
+    color: isDark ? "#ffffff" : "#333",
   },
 
   heading: {
@@ -373,8 +370,10 @@ const styles = {
   input: {
     padding: "18px",
     borderRadius: "20px",
-    border: "1px solid #ddd",
+    border: isDark ? "1px solid #333" : "1px solid #ddd",
     fontSize: "14px",
+    background: isDark ? "#2a2a2a" : "#fff",
+    color: isDark ? "#fff" : "#333",
   },
 
   dropdownWrapper: { position: "relative" },
@@ -382,11 +381,12 @@ const styles = {
   dropdownHeader: {
     padding: "18px",
     borderRadius: "20px",
-    border: "1px solid #ddd",
+    border: isDark ? "1px solid #333" : "1px solid #ddd",
     display: "flex",
     justifyContent: "space-between",
     cursor: "pointer",
-    background: "#f9f9f9",
+    background: isDark ? "#2a2a2a" : "#f9f9f9",
+    color: isDark ? "#fff" : "#333",
   },
 
   dropdownList: {
@@ -394,15 +394,15 @@ const styles = {
     width: "100%",
     marginTop: "10px",
     borderRadius: "20px",
-    background: "#ffffff",
-    boxShadow: "0 15px 35px rgba(0,0,0,0.15)",
+    background: isDark ? "#2a2a2a" : "#ffffff",
+    boxShadow: "0 15px 35px rgba(0,0,0,0.3)",
     overflow: "hidden",
+    zIndex: 10,
   },
 
   dropdownItem: {
     padding: "16px",
     cursor: "pointer",
-    transition: "0.2s",
   },
 
   primaryBtn: {
@@ -425,116 +425,76 @@ const styles = {
     cursor: "pointer",
   },
 
-  modalOverlay: {
+  error: { color: "#ff5252", textAlign: "center" },
+
+  overlay: {
     position: "fixed",
     inset: 0,
-    background: "rgba(0,0,0,0.5)",
+    background: "rgba(0,0,0,0.65)",
+    backdropFilter: "blur(6px)",
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    backdropFilter: "blur(4px)",
-    zIndex: 2000,
+    zIndex: 5000,
   },
 
-  modal: {
-    background: "#fff",
+  popup: {
+    background: isDark ? "#1e1e1e" : "rgba(255,255,255,0.95)",
     padding: "40px",
+    borderRadius: "30px",
+    width: "360px",
+    textAlign: "center",
+    boxShadow: "0 25px 70px rgba(0,0,0,0.4)",
+    color: isDark ? "#fff" : "#333",
+  },
+
+  iconCircle: {
+    width: "70px",
+    height: "70px",
+    borderRadius: "50%",
+    background: "linear-gradient(135deg,#ff6b6b,#ff8e53)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    fontSize: "28px",
+    margin: "0 auto 20px",
+    color: "#fff",
+  },
+
+  successIcon: {
+    width: "70px",
+    height: "70px",
+    borderRadius: "50%",
+    background: "linear-gradient(135deg,#4caf50,#81c784)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    fontSize: "32px",
+    margin: "0 auto 20px",
+    color: "#fff",
+  },
+
+  popupTitle: { fontSize: "22px", fontWeight: "600", marginBottom: "10px" },
+  popupText: { fontSize: "14px", color: isDark ? "#bbb" : "#666", marginBottom: "25px" },
+  popupActions: { display: "flex", justifyContent: "center", gap: "15px" },
+
+  confirmBtn: {
+    padding: "12px 20px",
     borderRadius: "25px",
-    width: "350px",
-    textAlign: "center",
+    border: "none",
+    background: "linear-gradient(135deg,#7b1fa2,#42a5f5)",
+    color: "#fff",
+    fontWeight: "600",
+    cursor: "pointer",
   },
 
-  error: {
-    color: "#ff5252",
-    textAlign: "center",
+  cancelBtn: {
+    padding: "12px 20px",
+    borderRadius: "25px",
+    border: isDark ? "1px solid #444" : "1px solid #ddd",
+    background: isDark ? "#2a2a2a" : "#fff",
+    color: isDark ? "#fff" : "#333",
+    fontWeight: "500",
+    cursor: "pointer",
   },
-  overlay: {
-  position: "fixed",
-  inset: 0,
-  background: "rgba(0,0,0,0.55)",
-  backdropFilter: "blur(8px)",
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
-  zIndex: 5000,
-  animation: "fadeIn 0.3s ease",
-},
-
-popup: {
-  background: "rgba(255,255,255,0.95)",
-  padding: "40px",
-  borderRadius: "30px",
-  width: "360px",
-  textAlign: "center",
-  boxShadow: "0 25px 70px rgba(0,0,0,0.25)",
-  transform: "scale(1)",
-  transition: "0.3s ease",
-},
-
-iconCircle: {
-  width: "70px",
-  height: "70px",
-  borderRadius: "50%",
-  background: "linear-gradient(135deg,#ff6b6b,#ff8e53)",
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
-  fontSize: "28px",
-  margin: "0 auto 20px",
-  color: "#fff",
-},
-
-successIcon: {
-  width: "70px",
-  height: "70px",
-  borderRadius: "50%",
-  background: "linear-gradient(135deg,#4caf50,#81c784)",
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
-  fontSize: "32px",
-  margin: "0 auto 20px",
-  color: "#fff",
-  fontWeight: "bold",
-},
-
-popupTitle: {
-  fontSize: "22px",
-  fontWeight: "600",
-  marginBottom: "10px",
-},
-
-popupText: {
-  fontSize: "14px",
-  color: "#666",
-  marginBottom: "25px",
-},
-
-popupActions: {
-  display: "flex",
-  justifyContent: "center",
-  gap: "15px",
-},
-
-confirmBtn: {
-  padding: "12px 20px",
-  borderRadius: "25px",
-  border: "none",
-  background: "linear-gradient(135deg,#7b1fa2,#42a5f5)",
-  color: "#fff",
-  fontWeight: "600",
-  cursor: "pointer",
-  boxShadow: "0 8px 20px rgba(123,31,162,0.4)",
-  transition: "0.2s ease",
-},
-
-cancelBtn: {
-  padding: "12px 20px",
-  borderRadius: "25px",
-  border: "1px solid #ddd",
-  background: "#fff",
-  fontWeight: "500",
-  cursor: "pointer",
-},
-
-};
+});
