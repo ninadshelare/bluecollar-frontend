@@ -6,7 +6,7 @@ import { logout } from "../utils/auth";
 const Navbar = () => {
   const navigate = useNavigate();
 
-  const role = (localStorage.getItem("role") || "CUSTOMER").toUpperCase();
+  const role = (localStorage.getItem("role") || "").toUpperCase();
   const username = localStorage.getItem("username") || "User";
 
   const homeRoutes = {
@@ -15,8 +15,19 @@ const Navbar = () => {
     CUSTOMER: "/customer",
   };
 
+  const profileRoutes = {
+    ADMIN: "/admin/profile",
+    WORKER: "/worker/profile",
+    CUSTOMER: "/customer/profile",
+  };
+
   const handleHomeNavigation = () => {
-    navigate(homeRoutes[role] || "/customer");
+    navigate(homeRoutes[role] || "/login");
+  };
+
+  const handleProfileNavigation = () => {
+    navigate(profileRoutes[role] || "/login");
+    setMenuOpen(false);
   };
 
   const initial = username.charAt(0).toUpperCase();
@@ -26,7 +37,7 @@ const Navbar = () => {
     localStorage.getItem("theme") === "dark"
   );
 
-  // 🔥 Apply dark mode globally to body
+  /* Apply dark mode globally */
   useEffect(() => {
     document.body.style.backgroundColor = darkMode
       ? "#121212"
@@ -81,7 +92,7 @@ const Navbar = () => {
 
             <div
               style={styles.dropItem}
-              onClick={() => navigate("/customer/profile")}
+              onClick={handleProfileNavigation}
             >
               Profile
             </div>

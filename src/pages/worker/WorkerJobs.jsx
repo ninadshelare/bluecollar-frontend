@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import Navbar from "../../components/Navbar";
 import {
@@ -10,7 +9,6 @@ import { getWorkerProfileByUser } from "../../api/workerApi";
 
 const WorkerJobs = () => {
   const userId = Number(localStorage.getItem("userId"));
-
   const [workerId, setWorkerId] = useState(
     Number(localStorage.getItem("workerProfileId"))
   );
@@ -20,7 +18,30 @@ const WorkerJobs = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  /* ================= RESTORE workerProfileId ================= */
+  /* ===== PREMIUM DARK MODE (SAME AS DASHBOARD) ===== */
+  const [darkMode, setDarkMode] = useState(
+    localStorage.getItem("theme") === "dark"
+  );
+  const [themeAnimating, setThemeAnimating] = useState(false);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const currentTheme = localStorage.getItem("theme") === "dark";
+
+      if (currentTheme !== darkMode) {
+        setThemeAnimating(true);
+        setTimeout(() => setThemeAnimating(false), 400);
+      }
+
+      setDarkMode(currentTheme);
+    }, 200);
+
+    return () => clearInterval(interval);
+  }, [darkMode]);
+
+  const styles = getStyles(darkMode);
+
+  /* ================= RESTORE PROFILE ================= */
   useEffect(() => {
     const restoreWorkerProfile = async () => {
       if (workerId && !isNaN(workerId)) return;
@@ -44,15 +65,21 @@ const WorkerJobs = () => {
 
     restoreWorkerProfile();
   }, [workerId, userId]);
-  /* =========================================================== */
 
+  /* ================= FETCH + SORT JOBS ================= */
   const fetchJobs = async () => {
     if (!workerId || isNaN(workerId)) return;
 
     try {
       setLoading(true);
       const res = await getWorkerJobs(workerId);
-      setJobs(Array.isArray(res.data) ? res.data : []);
+      const jobList = Array.isArray(res.data) ? res.data : [];
+
+      const sortedJobs = jobList.sort(
+        (a, b) => b.requestId - a.requestId
+      );
+
+      setJobs(sortedJobs);
     } catch (err) {
       console.error(err);
       setError("Failed to load jobs");
@@ -66,6 +93,8 @@ const WorkerJobs = () => {
       fetchJobs();
     }
   }, [workerId]);
+
+  /* ================= ACTIONS ================= */
 
   const handleAccept = async (requestId) => {
     try {
@@ -91,14 +120,11 @@ const WorkerJobs = () => {
         await completeJob(job.requestId);
       }
 
-      alert("Job completed");
       fetchJobs();
     } catch {
       alert("Failed to complete job");
     }
   };
-
-  /* ================= UI STATES ================= */
 
   if (loading) {
     return (
@@ -125,7 +151,14 @@ const WorkerJobs = () => {
   return (
     <>
       <Navbar />
-      <div style={styles.page}>
+      <div
+        style={{
+          ...styles.page,
+          transform: themeAnimating ? "scale(0.98)" : "scale(1)",
+          opacity: themeAnimating ? 0.95 : 1,
+          transition: "all 0.4s ease",
+        }}
+      >
         <div style={styles.container}>
           <h1 style={styles.heading}>My Assigned Jobs</h1>
 
@@ -151,10 +184,7 @@ const WorkerJobs = () => {
                     {job.customer?.name || "Unknown"}
                   </p>
 
-                  <p style={styles.text}>
-                    <strong>Pricing:</strong>{" "}
-                    {pricingType || "N/A"}
-                  </p>
+          
 
                   {job.status === "ACCEPTED" && job.customer && (
                     <div style={styles.addressBox}>
@@ -198,6 +228,7 @@ const WorkerJobs = () => {
                           style={styles.input}
                         />
                       )}
+
                       <button
                         onClick={() => handleComplete(job)}
                         style={styles.successBtn}
@@ -222,36 +253,19 @@ const WorkerJobs = () => {
 
 export default WorkerJobs;
 
-
-/* ---------- STATUS BADGE ---------- */
-const statusBadge = (status) => ({
-  padding: "6px 14px",
-  borderRadius: "30px",
-  fontSize: 12,
-  fontWeight: "600",
-  letterSpacing: 0.4,
-  color: "#fff",
-  background:
-    status === "PENDING"
-      ? "#f59e0b"
-      : status === "ACCEPTED"
-      ? "#2563eb"
-      : "#16a34a",
-});
-
-/* ---------- STYLES ---------- */
-const styles = {
+/* ===== PREMIUM DARK THEME ===== */
+const getStyles = (isDark) => ({
   page: {
     minHeight: "100vh",
-    background: "linear-gradient(120deg, #f0f4ff, #f8fafc)",
+    background: isDark ? "#121212" : "linear-gradient(120deg, #f0f4ff, #f8fafc)",
     padding: "50px 20px",
+    color: isDark ? "#fff" : "#000",
   },
   container: {
     maxWidth: 1100,
     margin: "auto",
   },
   heading: {
-    color: "#1e293b",
     marginBottom: 35,
     textAlign: "center",
     fontWeight: "700",
@@ -259,7 +273,7 @@ const styles = {
   },
   message: {
     textAlign: "center",
-    color: "#64748b",
+    color: isDark ? "#aaa" : "#64748b",
   },
   grid: {
     display: "grid",
@@ -267,11 +281,13 @@ const styles = {
     gap: 24,
   },
   card: {
-    background: "#ffffff",
+    background: isDark ? "#1e1e1e" : "#ffffff",
     borderRadius: 18,
     padding: 24,
-    boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
-    border: "1px solid #f1f5f9",
+    boxShadow: isDark
+      ? "0 10px 30px rgba(0,0,0,0.6)"
+      : "0 10px 30px rgba(0,0,0,0.08)",
+    border: isDark ? "1px solid #2a2a2a" : "1px solid #f1f5f9",
   },
   topRow: {
     display: "flex",
@@ -283,19 +299,20 @@ const styles = {
     margin: 0,
     fontWeight: "700",
     fontSize: 18,
-    color: "#0f172a",
   },
   text: {
     margin: "8px 0",
     fontSize: 14,
-    color: "#475569",
+    color: isDark ? "#ccc" : "#475569",
   },
   addressBox: {
     marginTop: 12,
     padding: 12,
     borderRadius: 10,
-    background: "#f8fafc",
-    border: "1px dashed #cbd5e1",
+    background: isDark ? "#2a2a2a" : "#f8fafc",
+    border: isDark
+      ? "1px solid #333"
+      : "1px dashed #cbd5e1",
   },
   primaryBtn: {
     marginTop: 18,
@@ -328,8 +345,25 @@ const styles = {
   input: {
     padding: "9px 12px",
     borderRadius: 8,
-    border: "1px solid #cbd5e1",
+    border: isDark ? "1px solid #333" : "1px solid #cbd5e1",
     marginRight: 8,
     fontSize: 14,
+    background: isDark ? "#2a2a2a" : "#fff",
+    color: isDark ? "#fff" : "#000",
   },
-};
+});
+
+const statusBadge = (status) => ({
+  padding: "6px 14px",
+  borderRadius: "30px",
+  fontSize: 12,
+  fontWeight: "600",
+  letterSpacing: 0.4,
+  color: "#fff",
+  background:
+    status === "PENDING"
+      ? "#f59e0b"
+      : status === "ACCEPTED"
+      ? "#2563eb"
+      : "#16a34a",
+});
