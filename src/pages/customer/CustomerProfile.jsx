@@ -219,7 +219,6 @@ const CustomerProfile = () => {
               onClick={() => setShowSuccess(false)}
               style={{ ...styles.confirmBtn, marginTop: 20 }}
             >
-              Awesome!
               Okay
             </button>
           </div>
