@@ -16,6 +16,8 @@ const CustomerRequests = () => {
   const [submittingFeedback, setSubmittingFeedback] = useState(null);
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [activePaymentId, setActivePaymentId] = useState(null);
+  const [activePaymentAmount, setActivePaymentAmount] = useState(null);
+
 
 
   /* ---------- DARK MODE ---------- */
@@ -172,10 +174,12 @@ const CustomerRequests = () => {
                     <button
                       style={styles.payBtn}
                       onClick={() => {
-                        setConfirmType("PAY");
-                        setSelectedId(req.payment.paymentId);
-                        setShowConfirmPopup(true);
-                      }}
+  setConfirmType("PAY");
+  setSelectedId(req.payment.paymentId);
+  setActivePaymentAmount(req.payment.amount); // ✅ STORE AMOUNT
+  setShowConfirmPopup(true);
+}}
+
                     >
                       Pay Now
                     </button>
@@ -280,15 +284,17 @@ const CustomerRequests = () => {
         </div>
       )}
       {showOtpModal && (
-        <OtpPaymentModal
-          paymentId={activePaymentId}
-          onSuccess={() => {
-            setShowOtpModal(false);
-            fetchRequests(); // refresh status
-          }}
-          onClose={() => setShowOtpModal(false)}
-        />
-      )}
+  <OtpPaymentModal
+    paymentId={activePaymentId}
+    amount={activePaymentAmount}   // ✅ PASS AMOUNT
+    onSuccess={() => {
+      setShowOtpModal(false);
+      fetchRequests();
+    }}
+    onClose={() => setShowOtpModal(false)}
+  />
+)}
+
 
     </>
   );
