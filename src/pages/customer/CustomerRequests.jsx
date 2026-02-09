@@ -26,19 +26,22 @@ const CustomerRequests = () => {
     return () => clearInterval(interval);
   }, []);
 
+  /* ---------- PREMIUM POPUP STATE ---------- */
+  const [showConfirmPopup, setShowConfirmPopup] = useState(false);
+  const [confirmType, setConfirmType] = useState(null);
+  const [selectedId, setSelectedId] = useState(null);
+
   useEffect(() => {
     fetchRequests();
   }, []);
 
-  /* ---------- FETCH REQUESTS (LATEST FIRST) ---------- */
+  /* ---------- FETCH REQUESTS ---------- */
   const fetchRequests = async () => {
     try {
       const res = await getCustomerRequests(customerId);
-
       const sorted = [...(res.data || [])].sort(
         (a, b) => b.requestId - a.requestId
       );
-
       setRequests(sorted);
     } catch {
       alert("Failed to load requests");
@@ -52,7 +55,6 @@ const CustomerRequests = () => {
     try {
       setProcessingPayment(paymentId);
       await payNow(paymentId);
-      alert("Payment successful");
       fetchRequests();
     } catch {
       alert("Payment failed");
@@ -78,7 +80,6 @@ const CustomerRequests = () => {
         comment: data.comment || "",
       });
 
-      // ✅ Instant UI update (feedback won't reappear after reload)
       setRequests((prev) =>
         prev.map((req) =>
           req.requestId === requestId
@@ -121,11 +122,7 @@ const CustomerRequests = () => {
             My Service Requests
           </h2>
 
-          {loading && (
-            <p style={{ color: darkMode ? "#ccc" : "#000" }}>
-              Loading...
-            </p>
-          )}
+          {loading && <p style={{ color: darkMode ? "#ccc" : "#000" }}>Loading...</p>}
 
           {!loading && requests.length === 0 && (
             <p style={{ color: darkMode ? "#ccc" : "#000" }}>
@@ -140,12 +137,8 @@ const CustomerRequests = () => {
                 ...styles.card,
                 background: darkMode ? "#1e1e1e" : "rgba(255,255,255,0.95)",
                 color: darkMode ? "#fff" : "#000",
-                boxShadow: darkMode
-                  ? "0 20px 45px rgba(0,0,0,0.6)"
-                  : "0 20px 45px rgba(0,0,0,0.1)",
               }}
             >
-              {/* HEADER */}
               <div style={styles.cardHeader}>
                 <div>
                   <h3 style={styles.service}>{req.serviceName}</h3>
@@ -181,35 +174,16 @@ const CustomerRequests = () => {
                     <b>₹{req.payment.amount}</b>
                   </div>
 
-                  <div style={styles.row}>
-                    <span>Pricing</span>
-                    <b>{req.payment.pricingType}</b>
-                  </div>
-
-                  <span
-                    style={{
-                      ...styles.statusPill,
-                      ...statusStyle(req.payment.status),
-                      marginTop: 8,
-                      display: "inline-block",
-                    }}
-                  >
-                    {req.payment.status}
-                  </span>
-
                   {req.payment.status === "PENDING" && (
                     <button
                       style={styles.payBtn}
-                      disabled={
-                        processingPayment === req.payment.paymentId
-                      }
-                      onClick={() =>
-                        handlePayNow(req.payment.paymentId)
-                      }
+                      onClick={() => {
+                        setConfirmType("PAY");
+                        setSelectedId(req.payment.paymentId);
+                        setShowConfirmPopup(true);
+                      }}
                     >
-                      {processingPayment === req.payment.paymentId
-                        ? "Processing..."
-                        : "Pay Now"}
+                      Pay Now
                     </button>
                   )}
                 </div>
@@ -240,53 +214,74 @@ const CustomerRequests = () => {
                       }
                     />
 
-                    <textarea
-                      placeholder="Share your feedback (optional)"
-                      style={{
-                        ...styles.textarea,
-                        background: darkMode ? "#1e1e1e" : "#fff",
-                        color: darkMode ? "#fff" : "#000",
-                        border: darkMode
-                          ? "1px solid #444"
-                          : "1px solid #ddd",
-                      }}
-                      onChange={(e) =>
-                        setFeedback({
-                          ...feedback,
-                          [req.requestId]: {
-                            ...feedback[req.requestId],
-                            comment: e.target.value,
-                          },
-                        })
-                      }
-                    />
-
                     <button
-                      style={styles.submitBtn}
-                      disabled={
-                        submittingFeedback === req.requestId
-                      }
-                      onClick={() =>
-                        handleFeedbackSubmit(req.requestId)
-                      }
-                    >
-                      {submittingFeedback === req.requestId
-                        ? "Submitting..."
-                        : "Submit Feedback"}
-                    </button>
+  style={{
+    ...styles.submitBtn,
+    opacity: feedback[req.requestId]?.rating ? 1 : 0.5,
+    cursor: feedback[req.requestId]?.rating ? "pointer" : "not-allowed",
+  }}
+  disabled={!feedback[req.requestId]?.rating}
+  onClick={() => {
+    setConfirmType("FEEDBACK");
+    setSelectedId(req.requestId);
+    setShowConfirmPopup(true);
+  }}
+>
+  Submit Feedback
+</button>
+
                   </div>
                 )}
-
-              {/* FEEDBACK DONE */}
-              {req.feedback && (
-                <div style={styles.successBox}>
-                  ⭐ Thank you for your feedback!
-                </div>
-              )}
             </div>
           ))}
         </div>
       </div>
+
+      {/* PREMIUM POPUP */}
+      {showConfirmPopup && (
+        <div style={popupStyles.overlay}>
+          <div
+            style={{
+              ...popupStyles.popup,
+              background: darkMode ? "#1e1e2f" : "#ffffff",
+              color: darkMode ? "#fff" : "#000",
+            }}
+          >
+            <div style={popupStyles.iconCircle}>
+              {confirmType === "PAY" ? "💳" : "⭐"}
+            </div>
+
+            <h3>
+              {confirmType === "PAY"
+                ? "Confirm Payment?"
+                : "Submit Feedback?"}
+            </h3>
+
+            <div style={popupStyles.actions}>
+              <button
+                style={popupStyles.confirmBtn}
+                onClick={() => {
+                  if (confirmType === "PAY") {
+                    handlePayNow(selectedId);
+                  } else {
+                    handleFeedbackSubmit(selectedId);
+                  }
+                  setShowConfirmPopup(false);
+                }}
+              >
+                Yes, Continue
+              </button>
+
+              <button
+                style={popupStyles.cancelBtn}
+                onClick={() => setShowConfirmPopup(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
@@ -314,16 +309,13 @@ const styles = {
     borderRadius: "28px",
     padding: "26px",
     marginBottom: "28px",
-    transition: "0.3s",
   },
   cardHeader: {
     display: "flex",
     justifyContent: "space-between",
-    marginBottom: "18px",
   },
   service: {
     fontSize: "20px",
-    marginBottom: "6px",
   },
   statusPill: {
     padding: "6px 16px",
@@ -339,15 +331,6 @@ const styles = {
   row: {
     display: "flex",
     justifyContent: "space-between",
-    marginTop: "6px",
-  },
-  textarea: {
-    width: "100%",
-    minHeight: "80px",
-    marginTop: "12px",
-    padding: "14px",
-    borderRadius: "16px",
-    resize: "none",
   },
   submitBtn: {
     marginTop: "14px",
@@ -356,7 +339,6 @@ const styles = {
     border: "none",
     background: "linear-gradient(135deg,#7b1fa2,#42a5f5)",
     color: "#fff",
-    fontWeight: "bold",
     cursor: "pointer",
   },
   payBtn: {
@@ -365,17 +347,59 @@ const styles = {
     borderRadius: "22px",
     border: "none",
     background: "#ff9800",
-    fontWeight: "bold",
     cursor: "pointer",
   },
-  successBox: {
-    marginTop: "20px",
-    padding: "14px",
-    borderRadius: "18px",
-    background: "#e8f5e9",
-    color: "#2e7d32",
-    fontWeight: "600",
+};
+
+const popupStyles = {
+  overlay: {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(0,0,0,0.75)",
+    backdropFilter: "blur(8px)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 9999,
+  },
+  popup: {
+    padding: "40px",
+    borderRadius: "30px",
+    width: "360px",
     textAlign: "center",
+  },
+  iconCircle: {
+    width: "70px",
+    height: "70px",
+    borderRadius: "50%",
+    background: "linear-gradient(135deg,#7b1fa2,#42a5f5)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    fontSize: "30px",
+    margin: "0 auto 20px",
+    color: "#fff",
+  },
+  actions: {
+    display: "flex",
+    justifyContent: "center",
+    gap: "15px",
+    marginTop: 25,
+  },
+  confirmBtn: {
+    padding: "12px 22px",
+    borderRadius: "25px",
+    border: "none",
+    background: "linear-gradient(135deg,#7b1fa2,#42a5f5)",
+    color: "#fff",
+    cursor: "pointer",
+  },
+  cancelBtn: {
+    padding: "12px 22px",
+    borderRadius: "25px",
+    border: "1px solid #ccc",
+    background: "transparent",
+    cursor: "pointer",
   },
 };
 
@@ -384,9 +408,7 @@ const statusStyle = (status) => {
     return { background: "#fff3e0", color: "#f57c00" };
   if (status === "ACCEPTED")
     return { background: "#e3f2fd", color: "#1976d2" };
-  if (status === "COMPLETED")
-    return { background: "#e8f5e9", color: "#2e7d32" };
-  if (status === "PAID")
+  if (status === "COMPLETED" || status === "PAID")
     return { background: "#e8f5e9", color: "#2e7d32" };
   return {};
 };
