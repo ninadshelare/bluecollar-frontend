@@ -2,7 +2,7 @@ import { useState } from "react";
 import { initiatePayment, verifyOtpPayment } from "../../api/paymentApi";
 
 const OtpPaymentModal = ({ paymentId, amount, onSuccess, onClose }) => {
-  const [step, setStep] = useState("INIT"); // INIT | OTP | PROCESSING
+  const [step, setStep] = useState("INIT");
   const [sessionId, setSessionId] = useState("");
   const [otp, setOtp] = useState("");
   const [error, setError] = useState("");
@@ -20,11 +20,19 @@ const OtpPaymentModal = ({ paymentId, amount, onSuccess, onClose }) => {
   const verifyOtp = async () => {
     try {
       setStep("PROCESSING");
+
       const res = await verifyOtpPayment(paymentId, {
         paymentSessionId: sessionId,
         otp,
       });
-      onSuccess(res.data);
+
+      setStep("SUCCESS");
+
+      // Refresh parent after 2 seconds
+      setTimeout(() => {
+        onSuccess(res.data);
+      }, 2000);
+
     } catch {
       setStep("OTP");
       setError("Invalid OTP");
@@ -33,36 +41,38 @@ const OtpPaymentModal = ({ paymentId, amount, onSuccess, onClose }) => {
 
   return (
     <div style={overlay}>
-      <div style={container}>
+      <div style={checkoutBox}>
 
-        {/* Header */}
-        <div style={header}>
-          <div>
-            <div style={merchant}>Blue Collar Services</div>
-            <div style={order}>Order ID: {paymentId}</div>
-          </div>
-          <div style={secure}>🔒 Secured by Razorpay</div>
-        </div>
+        {step !== "SUCCESS" && (
+          <>
+            {/* Header */}
+            <div style={header}>
+              <div>
+                <div style={merchant}>Blue Collar Services</div>
+                <div style={order}>Order ID: {paymentId}</div>
+              </div>
+              <div style={secured}>🔒 Secured by Razorpay</div>
+            </div>
 
-        {/* Amount Section */}
-        <div style={amountSection}>
-          <div style={amountLabel}>Amount to Pay</div>
-          <div style={amount}>
-            ₹ {amount ? Number(amount).toFixed(2) : "0.00"}
-          </div>
-        </div>
+            {/* Amount */}
+            <div style={amountSection}>
+              <div style={amountLabel}>Amount to Pay</div>
+              <div style={amountText}>
+                ₹ {amount ? Number(amount).toFixed(2) : "0.00"}
+              </div>
+            </div>
 
-        <div style={divider}></div>
+            <div style={divider}></div>
+          </>
+        )}
 
-        {/* Payment Body */}
         <div style={body}>
 
           {step === "INIT" && (
             <>
-              <div style={verificationBox}>
-                Bank verification required to complete payment.
+              <div style={infoBox}>
+                You will receive an OTP on your registered mobile number.
               </div>
-
               <button style={primaryBtn} onClick={startPayment}>
                 Pay ₹ {amount}
               </button>
@@ -71,28 +81,23 @@ const OtpPaymentModal = ({ paymentId, amount, onSuccess, onClose }) => {
 
           {step === "OTP" && (
             <>
-              <div style={otpLabel}>
-                Enter OTP sent to your registered mobile number
-              </div>
-
+              <div style={otpTitle}>Enter 6-digit OTP</div>
               <input
                 style={otpInput}
                 value={otp}
                 onChange={(e) => setOtp(e.target.value)}
-                placeholder="Enter 6 digit OTP"
+                placeholder="••••••"
                 maxLength={6}
               />
-
               <button style={primaryBtn} onClick={verifyOtp}>
                 Confirm Payment
               </button>
-
               <div style={hint}>Demo OTP: 123456</div>
             </>
           )}
 
           {step === "PROCESSING" && (
-            <div style={processing}>
+            <div style={processingBox}>
               <div style={loader}></div>
               <div style={{ marginTop: 15 }}>
                 Processing your transaction...
@@ -100,15 +105,24 @@ const OtpPaymentModal = ({ paymentId, amount, onSuccess, onClose }) => {
             </div>
           )}
 
+          {step === "SUCCESS" && (
+            <div style={successBox}>
+              <div style={successIcon}>✔</div>
+              <h3>Payment Successful</h3>
+              <p>Your payment of ₹{amount} has been completed.</p>
+            </div>
+          )}
+
           {error && <div style={errorText}>{error}</div>}
-
         </div>
 
-        <div style={footer}>
-          <button style={cancelBtn} onClick={onClose}>
-            Cancel
-          </button>
-        </div>
+        {step !== "SUCCESS" && (
+          <div style={footer}>
+            <button style={cancelBtn} onClick={onClose}>
+              Cancel
+            </button>
+          </div>
+        )}
 
       </div>
     </div>
@@ -121,7 +135,7 @@ export default OtpPaymentModal;
 const overlay = {
   position: "fixed",
   inset: 0,
-  background: "#f5f7fa",
+  background: "#f4f6f8",
   display: "flex",
   justifyContent: "center",
   alignItems: "center",
@@ -129,17 +143,17 @@ const overlay = {
   fontFamily: "Inter, system-ui",
 };
 
-const container = {
-  width: 450,
+const checkoutBox = {
+  width: 420,
   background: "#ffffff",
-  borderRadius: 8,
-  boxShadow: "0 8px 30px rgba(0,0,0,0.08)",
+  borderRadius: 10,
+  boxShadow: "0 15px 40px rgba(0,0,0,0.15)",
   overflow: "hidden",
 };
 
 const header = {
   padding: "20px",
-  borderBottom: "1px solid #eaeaea",
+  borderBottom: "1px solid #eee",
   display: "flex",
   justifyContent: "space-between",
   alignItems: "center",
@@ -156,10 +170,10 @@ const order = {
   marginTop: 4,
 };
 
-const secure = {
+const secured = {
   fontSize: 12,
   color: "#0F4CFF",
-  fontWeight: 500,
+  fontWeight: 600,
 };
 
 const amountSection = {
@@ -171,7 +185,7 @@ const amountLabel = {
   color: "#888",
 };
 
-const amount = {
+const amountText = {
   fontSize: 26,
   fontWeight: 700,
   marginTop: 5,
@@ -179,14 +193,14 @@ const amount = {
 
 const divider = {
   height: 1,
-  background: "#eaeaea",
+  background: "#eee",
 };
 
 const body = {
   padding: "25px",
 };
 
-const verificationBox = {
+const infoBox = {
   background: "#f9fafb",
   padding: 15,
   borderRadius: 6,
@@ -194,7 +208,7 @@ const verificationBox = {
   fontSize: 14,
 };
 
-const otpLabel = {
+const otpTitle = {
   fontSize: 14,
   marginBottom: 10,
 };
@@ -203,7 +217,7 @@ const otpInput = {
   width: "100%",
   padding: 12,
   borderRadius: 6,
-  border: "1px solid #dcdcdc",
+  border: "1px solid #ddd",
   marginBottom: 20,
   fontSize: 16,
 };
@@ -220,7 +234,7 @@ const primaryBtn = {
   cursor: "pointer",
 };
 
-const processing = {
+const processingBox = {
   textAlign: "center",
   padding: "30px 0",
 };
@@ -234,20 +248,20 @@ const loader = {
   animation: "spin 1s linear infinite",
 };
 
+const errorText = {
+  color: "red",
+  fontSize: 13,
+  marginTop: 10,
+};
 const hint = {
   fontSize: 12,
   color: "#777",
   marginTop: 10,
 };
 
-const errorText = {
-  color: "red",
-  fontSize: 13,
-  marginTop: 10,
-};
 
 const footer = {
-  borderTop: "1px solid #eaeaea",
+  borderTop: "1px solid #eee",
   padding: 15,
   textAlign: "center",
 };
@@ -257,4 +271,21 @@ const cancelBtn = {
   border: "none",
   color: "#666",
   cursor: "pointer",
+};
+const successBox = {
+  textAlign: "center",
+  padding: "30px 0",
+};
+
+const successIcon = {
+  width: 70,
+  height: 70,
+  borderRadius: "50%",
+  background: "#4CAF50",
+  color: "#fff",
+  fontSize: 32,
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+  margin: "0 auto 20px",
 };

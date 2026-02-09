@@ -16,6 +16,8 @@ const CustomerRequests = () => {
   const [submittingFeedback, setSubmittingFeedback] = useState(null);
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [activePaymentId, setActivePaymentId] = useState(null);
+  const [activePaymentAmount, setActivePaymentAmount] = useState(null);
+
 
 
   /* ---------- DARK MODE ---------- */
@@ -172,10 +174,12 @@ const CustomerRequests = () => {
                     <button
                       style={styles.payBtn}
                       onClick={() => {
-                        setConfirmType("PAY");
-                        setSelectedId(req.payment.paymentId);
-                        setShowConfirmPopup(true);
-                      }}
+  setConfirmType("PAY");
+  setSelectedId(req.payment.paymentId);
+  setActivePaymentAmount(req.payment.amount); // ✅ STORE AMOUNT
+  setShowConfirmPopup(true);
+}}
+
                     >
                       Pay Now
                     </button>
@@ -207,49 +211,6 @@ const CustomerRequests = () => {
                         })
                       }
                     />
-                    <textarea
-  placeholder="Write your feedback (optional)"
-  value={feedback[req.requestId]?.comment || ""}
-  onChange={(e) =>
-    setFeedback({
-      ...feedback,
-      [req.requestId]: {
-        ...feedback[req.requestId],
-        comment: e.target.value,
-      },
-    })
-  }
-  onFocus={(e) => {
-    e.target.style.boxShadow = darkMode
-      ? "0 0 0 2px rgba(123,31,162,0.6)"
-      : "0 0 0 2px rgba(66,165,245,0.4)";
-  }}
-  onBlur={(e) => {
-    e.target.style.boxShadow = darkMode
-      ? "0 8px 20px rgba(0,0,0,0.4)"
-      : "0 8px 20px rgba(0,0,0,0.08)";
-  }}
-  style={{
-    marginTop: "16px",
-    width: "100%",
-    minHeight: "100px",
-    borderRadius: "20px",
-    padding: "16px",
-    border: darkMode ? "1px solid #333" : "1px solid #e0e0e0",
-    background: darkMode
-      ? "linear-gradient(145deg,#2a2a2a,#242424)"
-      : "#ffffff",
-    color: darkMode ? "#fff" : "#333",
-    resize: "none",
-    fontSize: "14px",
-    outline: "none",
-    transition: "all 0.25s ease",
-    boxShadow: darkMode
-      ? "0 8px 20px rgba(0,0,0,0.4)"
-      : "0 8px 20px rgba(0,0,0,0.08)",
-  }}
-/>
-
 
                     <button
                       style={{
@@ -276,83 +237,64 @@ const CustomerRequests = () => {
 
       {/* PREMIUM POPUP */}
       {showConfirmPopup && (
-  <div style={popupStyles.overlay}>
-    <div
-      style={{
-        ...popupStyles.popup,
-        background: darkMode
-          ? "#1e1e1e"
-          : "rgba(255,255,255,0.95)",
-        color: darkMode ? "#fff" : "#333",
-      }}
-    >
-      <div style={popupStyles.iconCircle}>
-        {confirmType === "PAY" ? "💳" : "⭐"}
-      </div>
+        <div style={popupStyles.overlay}>
+          <div
+            style={{
+              ...popupStyles.popup,
+              background: darkMode ? "#1e1e2f" : "#ffffff",
+              color: darkMode ? "#fff" : "#000",
+            }}
+          >
+            <div style={popupStyles.iconCircle}>
+              {confirmType === "PAY" ? "💳" : "⭐"}
+            </div>
 
-      <h3 style={popupStyles.popupTitle}>
-        {confirmType === "PAY"
-          ? "Confirm Payment?"
-          : "Submit Feedback?"}
-      </h3>
 
-      <p
-        style={{
-          ...popupStyles.popupText,
-          color: darkMode ? "#bbb" : "#666",
-        }}
-      >
-        {confirmType === "PAY"
-          ? "Do you want to proceed with this payment?"
-          : "Are you sure you want to submit this feedback?"}
-      </p>
+            <h3>
+              {confirmType === "PAY"
+                ? "Confirm Payment?"
+                : "Submit Feedback?"}
+            </h3>
 
-      <div style={popupStyles.popupActions}>
-        <button
-          style={popupStyles.confirmBtn}
-          onClick={() => {
-            if (confirmType === "PAY") {
-              setActivePaymentId(selectedId);
-              setShowOtpModal(true);
-            } else {
-              handleFeedbackSubmit(selectedId);
-            }
-            setShowConfirmPopup(false);
-          }}
-        >
-          Yes, Continue
-        </button>
+            <div style={popupStyles.actions}>
+              <button
+                style={popupStyles.confirmBtn}
+                onClick={() => {
+                  if (confirmType === "PAY") {
+                    setActivePaymentId(selectedId);
+                    setShowOtpModal(true);
+                  }
+                  else {
+                    handleFeedbackSubmit(selectedId);
+                  }
+                  setShowConfirmPopup(false);
+                }}
+              >
+                Yes, Continue
+              </button>
 
-        <button
-          style={{
-            ...popupStyles.cancelBtn,
-            border: darkMode
-              ? "1px solid #444"
-              : "1px solid #ddd",
-            background: darkMode
-              ? "#2a2a2a"
-              : "#fff",
-            color: darkMode ? "#fff" : "#333",
-          }}
-          onClick={() => setShowConfirmPopup(false)}
-        >
-          Cancel
-        </button>
-      </div>
-    </div>
-  </div>
+              <button
+                style={popupStyles.cancelBtn}
+                onClick={() => setShowConfirmPopup(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showOtpModal && (
+  <OtpPaymentModal
+    paymentId={activePaymentId}
+    amount={activePaymentAmount}   // ✅ PASS AMOUNT
+    onSuccess={() => {
+      setShowOtpModal(false);
+      fetchRequests();
+    }}
+    onClose={() => setShowOtpModal(false)}
+  />
 )}
 
-      {showOtpModal && (
-        <OtpPaymentModal
-          paymentId={activePaymentId}
-          onSuccess={() => {
-            setShowOtpModal(false);
-            fetchRequests(); // refresh status
-          }}
-          onClose={() => setShowOtpModal(false)}
-        />
-      )}
 
     </>
   );
@@ -427,22 +369,19 @@ const popupStyles = {
   overlay: {
     position: "fixed",
     inset: 0,
-    background: "rgba(0,0,0,0.65)",
-    backdropFilter: "blur(6px)",
+    background: "rgba(0,0,0,0.75)",
+    backdropFilter: "blur(8px)",
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
     zIndex: 9999,
   },
-
   popup: {
     padding: "40px",
     borderRadius: "30px",
     width: "360px",
     textAlign: "center",
-    boxShadow: "0 25px 70px rgba(0,0,0,0.4)",
   },
-
   iconCircle: {
     width: "70px",
     height: "70px",
@@ -455,24 +394,12 @@ const popupStyles = {
     margin: "0 auto 20px",
     color: "#fff",
   },
-
-  popupTitle: {
-    fontSize: "22px",
-    fontWeight: "600",
-    marginBottom: "10px",
-  },
-
-  popupText: {
-    fontSize: "14px",
-    marginBottom: "25px",
-  },
-
-  popupActions: {
+  actions: {
     display: "flex",
     justifyContent: "center",
     gap: "15px",
+    marginTop: 25,
   },
-
   confirmBtn: {
     padding: "12px 22px",
     borderRadius: "25px",
@@ -480,17 +407,15 @@ const popupStyles = {
     background: "linear-gradient(135deg,#7b1fa2,#42a5f5)",
     color: "#fff",
     cursor: "pointer",
-    fontWeight: "600",
   },
-
   cancelBtn: {
     padding: "12px 22px",
     borderRadius: "25px",
-    fontWeight: "500",
+    border: "1px solid #ccc",
+    background: "transparent",
     cursor: "pointer",
   },
 };
-
 
 const statusStyle = (status) => {
   if (status === "PENDING")
