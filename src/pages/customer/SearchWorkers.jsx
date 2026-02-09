@@ -22,13 +22,15 @@ const SearchWorkers = () => {
     "PLUMBER",
     "PAINTER",
     "CARPENTER",
-    "LABOUR",
-    "MAID",
   ];
 
   const [workers, setWorkers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [bookingId, setBookingId] = useState(null);
+
+  /* ✅ NEW POPUP STATES */
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [selectedWorker, setSelectedWorker] = useState(null);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -57,15 +59,25 @@ const SearchWorkers = () => {
     }
   };
 
-  const handleBook = async (workerId) => {
+  /* ✅ UPDATED BOOK FUNCTION (after confirmation) */
+  const handleBook = async () => {
+    if (!selectedWorker) return;
+
     try {
-      setBookingId(workerId);
-      await createWorkRequest(Number(customerId), Number(workerId));
+      setBookingId(selectedWorker);
 
-      localStorage.setItem("activeBookingWorkerId", workerId);
-      setActiveBookingWorkerId(workerId);
+      await createWorkRequest(
+        Number(customerId),
+        Number(selectedWorker)
+      );
 
-      alert("Service booked successfully!");
+      localStorage.setItem(
+        "activeBookingWorkerId",
+        selectedWorker
+      );
+      setActiveBookingWorkerId(selectedWorker);
+
+      setShowConfirm(false);
     } catch {
       alert("Failed to book service");
     } finally {
@@ -94,7 +106,6 @@ const SearchWorkers = () => {
         >
           <h2 style={styles.heading}>Search Workers</h2>
 
-          {/* 🔽 BEAUTIFIED DROPDOWN */}
           <div style={styles.filterRow}>
             <div style={styles.dropdown}>
               <div
@@ -111,7 +122,9 @@ const SearchWorkers = () => {
                 <span
                   style={{
                     ...styles.arrow,
-                    transform: serviceOpen ? "rotate(180deg)" : "rotate(0deg)",
+                    transform: serviceOpen
+                      ? "rotate(180deg)"
+                      : "rotate(0deg)",
                   }}
                 >
                   ▾
@@ -122,38 +135,44 @@ const SearchWorkers = () => {
                 <div
                   style={{
                     ...styles.dropdownMenu,
-                    background: darkMode ? "#2a2a2a" : "#ffffff",
+                    background: darkMode
+                      ? "#2a2a2a"
+                      : "#ffffff",
                   }}
                 >
                   {services.map((s) => (
                     <div
-  key={s}
-  style={{
-    ...styles.dropdownItem,
-    color: darkMode ? "#fff" : "#000",
-  }}
-  onMouseEnter={(e) => {
-    e.currentTarget.style.background = darkMode
-      ? "rgba(255,255,255,0.08)"
-      : "rgba(0,0,0,0.06)";
-  }}
-  onMouseLeave={(e) => {
-    e.currentTarget.style.background = "transparent";
-  }}
-  onClick={() => {
-    setFilters({ service: s });
-    setServiceOpen(false);
-  }}
->
-  {s}
-</div>
-
+                      key={s}
+                      style={{
+                        ...styles.dropdownItem,
+                        color: darkMode ? "#fff" : "#000",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background =
+                          darkMode
+                            ? "rgba(255,255,255,0.08)"
+                            : "rgba(0,0,0,0.06)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background =
+                          "transparent";
+                      }}
+                      onClick={() => {
+                        setFilters({ service: s });
+                        setServiceOpen(false);
+                      }}
+                    >
+                      {s}
+                    </div>
                   ))}
                 </div>
               )}
             </div>
 
-            <button onClick={handleSearch} style={styles.searchBtn}>
+            <button
+              onClick={handleSearch}
+              style={styles.searchBtn}
+            >
               {loading ? "Searching..." : "Search"}
             </button>
           </div>
@@ -164,14 +183,17 @@ const SearchWorkers = () => {
 
           <div style={styles.grid}>
             {workers.map((w) => {
-              const bookingLocked = Boolean(activeBookingWorkerId);
+              const bookingLocked =
+                Boolean(activeBookingWorkerId);
 
               return (
                 <div
                   key={w.workerId}
                   style={{
                     ...styles.card,
-                    background: darkMode ? "#232323" : "#ffffff",
+                    background: darkMode
+                      ? "#232323"
+                      : "#ffffff",
                   }}
                 >
                   <div style={styles.avatar}>
@@ -180,24 +202,40 @@ const SearchWorkers = () => {
 
                   <h4>{w.name}</h4>
                   <p>⭐ Rating: {w.rating ?? "N/A"}</p>
-                  <p>{w.experienceYears} years experience</p>
+                  <p>
+                    {w.experienceYears} years experience
+                  </p>
 
                   <p
                     style={{
-                      color: w.available ? "#4caf50" : "#f44336",
+                      color: w.available
+                        ? "#4caf50"
+                        : "#f44336",
                       fontWeight: 600,
                     }}
                   >
-                    ● {w.available ? "Available" : "Busy"}
+                    ●{" "}
+                    {w.available
+                      ? "Available"
+                      : "Busy"}
                   </p>
 
                   <button
-                    onClick={() => handleBook(w.workerId)}
-                    disabled={bookingLocked || !w.available || bookingId === w.workerId}
+                    onClick={() => {
+                      setSelectedWorker(w.workerId);
+                      setShowConfirm(true);
+                    }}
+                    disabled={
+                      bookingLocked ||
+                      !w.available ||
+                      bookingId === w.workerId
+                    }
                     style={{
                       ...styles.bookBtn,
                       opacity: bookingLocked ? 0.5 : 1,
-                      cursor: bookingLocked ? "not-allowed" : "pointer",
+                      cursor: bookingLocked
+                        ? "not-allowed"
+                        : "pointer",
                     }}
                   >
                     {bookingLocked
@@ -212,6 +250,52 @@ const SearchWorkers = () => {
           </div>
         </div>
       </div>
+
+      {/* ✅ PREMIUM CONFIRM POPUP */}
+      {showConfirm && (
+        <div style={popupStyles.overlay}>
+          <div
+            style={{
+              ...popupStyles.popup,
+              background: darkMode
+                ? "#1e1e2f"
+                : "#ffffff",
+              color: darkMode ? "#fff" : "#333",
+            }}
+          >
+            <div style={popupStyles.iconCircle}>
+              ⚡
+            </div>
+
+            <h3 style={popupStyles.title}>
+              Confirm Booking?
+            </h3>
+
+            <p style={popupStyles.text}>
+              Are you sure you want to book this
+              worker?
+            </p>
+
+            <div style={popupStyles.actions}>
+              <button
+                style={popupStyles.confirmBtn}
+                onClick={handleBook}
+              >
+                Yes, Book Now
+              </button>
+
+              <button
+                style={popupStyles.cancelBtn}
+                onClick={() =>
+                  setShowConfirm(false)
+                }
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
@@ -227,31 +311,27 @@ const styles = {
     display: "flex",
     justifyContent: "center",
   },
-
   container: {
     width: "100%",
     maxWidth: "1100px",
     padding: "40px",
     borderRadius: "28px",
-    boxShadow: "0 20px 40px rgba(0,0,0,0.15)",
+    boxShadow:
+      "0 20px 40px rgba(0,0,0,0.15)",
   },
-
   heading: {
     fontSize: "26px",
     marginBottom: "25px",
   },
-
   filterRow: {
     display: "flex",
     gap: "15px",
     marginBottom: "35px",
   },
-
   dropdown: {
     position: "relative",
     flex: 1,
   },
-
   dropdownHeader: {
     padding: "16px",
     borderRadius: "18px",
@@ -259,60 +339,56 @@ const styles = {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    boxShadow: "inset 0 2px 6px rgba(0,0,0,0.08)",
-    transition: "0.3s",
+    boxShadow:
+      "inset 0 2px 6px rgba(0,0,0,0.08)",
   },
-
   arrow: {
     transition: "0.3s",
     fontSize: "18px",
   },
-
   dropdownMenu: {
     position: "absolute",
     top: "110%",
     width: "100%",
     borderRadius: "18px",
-    boxShadow: "0 15px 35px rgba(0,0,0,0.2)",
+    boxShadow:
+      "0 15px 35px rgba(0,0,0,0.2)",
     zIndex: 10,
     overflow: "hidden",
   },
-
   dropdownItem: {
-  padding: "14px 16px",
-  cursor: "pointer",
-  transition: "all 0.2s ease",
-},
-
-
+    padding: "14px 16px",
+    cursor: "pointer",
+  },
   searchBtn: {
     padding: "16px 24px",
     borderRadius: "20px",
     border: "none",
-    background: "linear-gradient(135deg,#7b1fa2,#42a5f5)",
+    background:
+      "linear-gradient(135deg,#7b1fa2,#42a5f5)",
     color: "#fff",
     fontWeight: "bold",
     cursor: "pointer",
   },
-
   grid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))",
+    gridTemplateColumns:
+      "repeat(auto-fit,minmax(260px,1fr))",
     gap: "25px",
   },
-
   card: {
     padding: "26px",
     borderRadius: "24px",
     textAlign: "center",
-    boxShadow: "0 10px 25px rgba(0,0,0,0.08)",
+    boxShadow:
+      "0 10px 25px rgba(0,0,0,0.08)",
   },
-
   avatar: {
     width: "70px",
     height: "70px",
     borderRadius: "50%",
-    background: "linear-gradient(135deg,#42a5f5,#1976d2)",
+    background:
+      "linear-gradient(135deg,#42a5f5,#1976d2)",
     color: "#fff",
     display: "flex",
     alignItems: "center",
@@ -321,7 +397,6 @@ const styles = {
     fontWeight: "bold",
     margin: "0 auto 15px auto",
   },
-
   bookBtn: {
     marginTop: "12px",
     padding: "12px",
@@ -332,9 +407,76 @@ const styles = {
     fontWeight: "bold",
     width: "100%",
   },
-
   empty: {
     textAlign: "center",
     opacity: 0.7,
+  },
+};
+
+/* PREMIUM POPUP STYLES */
+
+const popupStyles = {
+  overlay: {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(0,0,0,0.7)",
+    backdropFilter: "blur(8px)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 5000,
+  },
+  popup: {
+    padding: "40px",
+    borderRadius: "28px",
+    width: "360px",
+    textAlign: "center",
+    boxShadow:
+      "0 25px 70px rgba(0,0,0,0.4)",
+  },
+  iconCircle: {
+    width: "70px",
+    height: "70px",
+    borderRadius: "50%",
+    background:
+      "linear-gradient(135deg,#7b1fa2,#42a5f5)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    fontSize: "28px",
+    margin: "0 auto 20px",
+    color: "#fff",
+  },
+  title: {
+    fontSize: "22px",
+    fontWeight: "600",
+    marginBottom: "10px",
+  },
+  text: {
+    fontSize: "14px",
+    opacity: 0.8,
+    marginBottom: "25px",
+  },
+  actions: {
+    display: "flex",
+    justifyContent: "center",
+    gap: "15px",
+  },
+  confirmBtn: {
+    padding: "12px 20px",
+    borderRadius: "25px",
+    border: "none",
+    background:
+      "linear-gradient(135deg,#7b1fa2,#42a5f5)",
+    color: "#fff",
+    fontWeight: "600",
+    cursor: "pointer",
+  },
+  cancelBtn: {
+    padding: "12px 20px",
+    borderRadius: "25px",
+    border: "1px solid #ccc",
+    background: "transparent",
+    cursor: "pointer",
   },
 };
