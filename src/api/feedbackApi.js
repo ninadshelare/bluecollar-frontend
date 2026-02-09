@@ -1,9 +1,9 @@
-import axios from "axios";
+import axiosInstance from "./axiosInstance";
 
-const BASE = "http://localhost:8081";
+/* ---------------- FEEDBACK (JWT BASED) ---------------- */
 
 export const submitFeedback = ({ requestId, rating, comment }) =>
-  axios.post(`${BASE}/api/feedback/add`, null, {
+  axiosInstance.post(`/api/feedback/add`, null, {
     params: {
       requestId,
       rating,

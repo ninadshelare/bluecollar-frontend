@@ -50,6 +50,11 @@ const AuthPage = () => {
         localStorage.setItem("userId", res.data.userId);
         localStorage.setItem("role", res.data.role);
         localStorage.setItem("name", res.data.name);
+        localStorage.setItem("token", res.data.token);
+
+        console.log("JWT Token:", res.data.token);
+        console.log("User ID:", res.data.userId);
+        console.log("Role:", res.data.role);
 
         // 🚀 REDIRECT
         if (res.data.role === "ADMIN") navigate("/admin");

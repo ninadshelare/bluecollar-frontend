@@ -43,20 +43,37 @@ const CustomerProfile = () => {
     }, 200);
     return () => clearInterval(interval);
   }, []);
+  const styles = getStyles(darkMode);
 
   /* ---------- LOAD PROFILE ---------- */
   useEffect(() => {
-    getCustomerProfile(userId)
-      .then((res) => {
-        setForm(res.data || emptyForm);
+  getCustomerProfile()
+    .then((res) => {
+      if (res.data) {
+        const data = res.data;
+
+        setForm({
+          phone: data.phone || "",
+          addressLine1: data.addressLine1 || "",
+          addressLine2: data.addressLine2 || "",
+          city: data.city || "",
+          state: data.state || "",
+          pincode: data.pincode || "",
+        });
+
         setProfileExists(true);
-      })
-      .catch(() => {
+      } else {
         setProfileExists(false);
         setForm(emptyForm);
-      })
-      .finally(() => setLoading(false));
-  }, [userId]);
+      }
+    })
+    .catch(() => {
+      setProfileExists(false);
+      setForm(emptyForm);
+    })
+    .finally(() => setLoading(false));
+}, []);
+
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -64,6 +81,21 @@ const CustomerProfile = () => {
   };
 
   /* ---------- CONFIRM ---------- */
+  const validateForm = () => {
+  if (
+    !form.phone.trim() ||
+    !form.addressLine1.trim() ||
+    !form.city.trim() ||
+    !form.state.trim() ||
+    !form.pincode.trim()
+  ) {
+    setError("Please fill required fields");
+    return false;
+  }
+
+  return true;
+};
+
   const openConfirm = (type) => {
     setConfirmType(type);
     setShowConfirm(true);
@@ -77,17 +109,17 @@ const CustomerProfile = () => {
     try {
       if (confirmType === "update") {
         if (profileExists) {
-          await updateCustomerProfile(userId, form);
+          await updateCustomerProfile( form);
           setSuccessMessage("Profile updated successfully!");
         } else {
-          await createCustomerProfile(userId, form);
+          await createCustomerProfile(form);
           setProfileExists(true);
           setSuccessMessage("Profile created successfully!");
         }
       }
 
       if (confirmType === "delete") {
-        await deleteCustomerProfile(userId);
+        await deleteCustomerProfile(form);
         setProfileExists(false);
         setForm(emptyForm);
         setSuccessMessage("Profile deleted successfully!");
@@ -115,20 +147,13 @@ const CustomerProfile = () => {
       <Navbar />
 
       <div
-        style={{
-          ...styles.page,
-          background: darkMode
-            ? "linear-gradient(135deg,#1a1a1a,#121212)"
-            : "linear-gradient(135deg,#e3f2fd,#fce4ec)",
-        }}
-      >
-        <div
-          style={{
-            ...styles.card,
-            background: darkMode ? "#1e1e1e" : "#ffffff",
-            color: darkMode ? "#ffffff" : "#000000",
-          }}
-        >
+  style={{
+    ...styles.page,
+    background: darkMode ? "#121212" : styles.page.background,
+  }}
+>
+        <div style={styles.card}>
+
           <h2 style={styles.heading}>
             {profileExists ? "Your Profile" : "Complete Your Profile"}
           </h2>
@@ -138,22 +163,29 @@ const CustomerProfile = () => {
           <div style={styles.grid}>
             {Object.keys(form).map((field) => (
               <input
-                key={field}
-                name={field}
-                value={form[field]}
-                onChange={handleChange}
-                placeholder={
-                  field === "addressLine2"
-                    ? "Address Line 2 (Optional)"
-                    : field.replace(/([A-Z])/g, " $1")
-                }
-                style={styles.input}
-              />
+  key={field}
+  name={field}
+  required={field !== "addressLine2"}
+  value={form[field]}
+  onChange={handleChange}
+  placeholder={
+    field === "addressLine2"
+      ? "Address Line 2 (Optional)"
+      : field.replace(/([A-Z])/g, " $1") + " *"
+  }
+  style={styles.input}
+/>
+
             ))}
           </div>
 
           <button
-            onClick={() => openConfirm("update")}
+            onClick={() => {
+  if (validateForm()) {
+    openConfirm("update");
+  }
+}}
+
             style={styles.primaryBtn}
             disabled={saving}
           >
@@ -233,13 +265,14 @@ export default CustomerProfile;
 
 /* ------------------ STYLES ------------------ */
 
-const styles = {
+const getStyles = (isDark) => ({
   page: {
     minHeight: "100vh",
     padding: "80px 20px",
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
+    background: "linear-gradient(135deg,#e3f2fd,#fce4ec)",
   },
 
   card: {
@@ -247,8 +280,11 @@ const styles = {
     maxWidth: "650px",
     padding: "50px",
     borderRadius: "30px",
-    transition: "0.3s",
-    boxShadow: "0 25px 60px rgba(0,0,0,0.15)",
+    boxShadow: isDark
+      ? "0 25px 60px rgba(0,0,0,0.6)"
+      : "0 25px 60px rgba(0,0,0,0.15)",
+    background: isDark ? "#1e1e1e" : "#ffffff",
+    color: isDark ? "#ffffff" : "#333",
   },
 
   heading: {
@@ -273,7 +309,9 @@ const styles = {
     borderRadius: "20px",
     fontSize: "14px",
     outline: "none",
-    border: "1px solid #ddd",
+    border: isDark ? "1px solid #333" : "1px solid #ddd",
+    background: isDark ? "#2a2a2a" : "#fff",
+    color: isDark ? "#fff" : "#333",
   },
 
   primaryBtn: {
@@ -311,27 +349,25 @@ const styles = {
     textAlign: "center",
   },
 
-  /* ---------- POPUP STYLES ---------- */
-
   overlay: {
     position: "fixed",
     inset: 0,
-    background: "rgba(0,0,0,0.55)",
-    backdropFilter: "blur(8px)",
+    background: "rgba(0,0,0,0.65)",
+    backdropFilter: "blur(6px)",
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
     zIndex: 5000,
-    animation: "fadeIn 0.3s ease",
   },
 
   popup: {
-    background: "rgba(255,255,255,0.95)",
+    background: isDark ? "#1e1e1e" : "rgba(255,255,255,0.95)",
     padding: "40px",
     borderRadius: "30px",
     width: "360px",
     textAlign: "center",
-    boxShadow: "0 25px 70px rgba(0,0,0,0.25)",
+    boxShadow: "0 25px 70px rgba(0,0,0,0.4)",
+    color: isDark ? "#fff" : "#333",
   },
 
   iconCircle: {
@@ -369,7 +405,7 @@ const styles = {
 
   popupText: {
     fontSize: "14px",
-    color: "#666",
+    color: isDark ? "#bbb" : "#666",
     marginBottom: "25px",
   },
 
@@ -387,15 +423,15 @@ const styles = {
     color: "#fff",
     fontWeight: "600",
     cursor: "pointer",
-    boxShadow: "0 8px 20px rgba(123,31,162,0.4)",
   },
 
   cancelBtn: {
     padding: "12px 20px",
     borderRadius: "25px",
-    border: "1px solid #ddd",
-    background: "#fff",
+    border: isDark ? "1px solid #444" : "1px solid #ddd",
+    background: isDark ? "#2a2a2a" : "#fff",
+    color: isDark ? "#fff" : "#333",
     fontWeight: "500",
     cursor: "pointer",
   },
-};
+});

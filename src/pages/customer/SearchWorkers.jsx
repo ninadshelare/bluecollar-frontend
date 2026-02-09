@@ -67,7 +67,6 @@ const SearchWorkers = () => {
       setBookingId(selectedWorker);
 
       await createWorkRequest(
-        Number(customerId),
         Number(selectedWorker)
       );
 

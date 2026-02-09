@@ -17,7 +17,7 @@ const AuthPage = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  /* ---------- DARK MODE SYNC (same as Customer pages) ---------- */
+  /* ---------- DARK MODE SYNC ---------- */
   const [darkMode, setDarkMode] = useState(
     localStorage.getItem("theme") === "dark"
   );
@@ -46,13 +46,17 @@ const AuthPage = () => {
           password: formData.password,
         });
 
-        localStorage.setItem("userId", res.data.userId);
+        /* ✅ JWT + USER SESSION STORAGE */
+        localStorage.setItem("token", res.data.token);   // 🆕 JWT
+        localStorage.setItem("userId", res.data.userId); // keep for now
         localStorage.setItem("role", res.data.role);
         localStorage.setItem("name", res.data.name);
 
+        /* ✅ ROLE-BASED NAVIGATION */
         if (res.data.role === "ADMIN") navigate("/admin");
         else if (res.data.role === "WORKER") navigate("/worker");
         else navigate("/customer");
+
       } else {
         await register(formData);
         alert("Registration successful! Please login.");
@@ -157,11 +161,7 @@ const AuthPage = () => {
           )}
 
           <button type="submit" disabled={loading} style={styles.primaryBtn}>
-            {loading
-              ? "Please wait..."
-              : isLogin
-              ? "Login"
-              : "Register"}
+            {loading ? "Please wait..." : isLogin ? "Login" : "Register"}
           </button>
         </form>
 
@@ -177,7 +177,7 @@ const AuthPage = () => {
 
 export default AuthPage;
 
-/* ------------------ STYLES (MATCH CUSTOMER UI) ------------------ */
+/* ------------------ STYLES ------------------ */
 
 const styles = {
   page: {
@@ -187,32 +187,26 @@ const styles = {
     justifyContent: "center",
     alignItems: "center",
   },
-
   card: {
     width: "100%",
     maxWidth: "420px",
     padding: "50px",
     borderRadius: "30px",
-    transition: "0.3s",
     textAlign: "center",
   },
-
   logoContainer: {
     display: "flex",
     justifyContent: "center",
     marginBottom: "20px",
   },
-
   logo: {
     width: "90px",
   },
-
   heading: {
     fontSize: "28px",
     marginBottom: "36px",
     fontWeight: "600",
   },
-
   input: {
     width: "100%",
     padding: "18px",
@@ -221,7 +215,6 @@ const styles = {
     outline: "none",
     marginBottom: "20px",
   },
-
   primaryBtn: {
     width: "100%",
     padding: "18px",
@@ -234,7 +227,6 @@ const styles = {
     cursor: "pointer",
     marginTop: "10px",
   },
-
   toggle: {
     marginTop: "28px",
     fontSize: "14px",
@@ -242,10 +234,8 @@ const styles = {
     fontWeight: "500",
     cursor: "pointer",
   },
-
   error: {
     color: "#ff5252",
     marginBottom: "20px",
-    textAlign: "center",
   },
 };

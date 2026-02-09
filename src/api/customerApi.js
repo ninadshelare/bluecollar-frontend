@@ -1,27 +1,17 @@
-import axios from "axios";
+import axiosInstance from "./axiosInstance";
 
-const BASE = "http://localhost:8081";
+export const getCustomerProfile = () =>
+  axiosInstance.get("/api/customers/profile");
 
-// View profile
-export const getCustomerProfile = (userId) =>
-  axios.get(`${BASE}/api/customers/profile`, {
-    params: { userId },
+export const createCustomerProfile = (data) =>
+  axiosInstance.post("/api/customers/profile", data, {
+    headers: { "Content-Type": "application/json" },
   });
 
-// Create profile
-export const createCustomerProfile = (userId, data) =>
-  axios.post(`${BASE}/api/customers/profile`, data, {
-    params: { userId },
+export const updateCustomerProfile = (data) =>
+  axiosInstance.put("/api/customers/profile", data, {
+    headers: { "Content-Type": "application/json" },
   });
 
-// Update profile
-export const updateCustomerProfile = (userId, data) =>
-  axios.put(`${BASE}/api/customers/profile`, data, {
-    params: { userId },
-  });
-
-// Delete profile
-export const deleteCustomerProfile = (userId) =>
-  axios.delete(`${BASE}/api/customers/profile`, {
-    params: { userId },
-  });
+export const deleteCustomerProfile = () =>
+  axiosInstance.delete("/api/customers/profile");
