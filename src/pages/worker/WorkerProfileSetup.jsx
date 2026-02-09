@@ -207,14 +207,25 @@ const WorkerProfileSetup = () => {
               {dropdownOpen && (
                 <div style={styles.dropdownList}>
                   {Object.keys(SERVICE_MAP).map((service) => (
-                    <div
-                      key={service}
-                      style={styles.dropdownItem}
-                      onClick={() => handleServiceSelect(service)}
-                    >
-                      {service}
-                    </div>
-                  ))}
+  <div
+    key={service}
+    style={styles.dropdownItem}
+    onClick={() => handleServiceSelect(service)}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.background = darkMode
+        ? "rgba(255,255,255,0.08)"
+        : "rgba(0,0,0,0.05)";
+      e.currentTarget.style.transform = "translateX(6px) scale(1.02)";
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.background = "transparent";
+      e.currentTarget.style.transform = "translateX(0px) scale(1)";
+    }}
+  >
+    {service}
+  </div>
+))}
+
                 </div>
               )}
             </div>
@@ -400,10 +411,12 @@ const getStyles = (isDark) => ({
     zIndex: 10,
   },
 
-  dropdownItem: {
-    padding: "16px",
-    cursor: "pointer",
-  },
+ dropdownItem: {
+  padding: "16px",
+  cursor: "pointer",
+  transition: "all 0.25s ease",
+},
+
 
   primaryBtn: {
     padding: "16px 25px",

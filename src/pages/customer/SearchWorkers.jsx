@@ -253,49 +253,57 @@ const SearchWorkers = () => {
 
       {/* ✅ PREMIUM CONFIRM POPUP */}
       {showConfirm && (
-        <div style={popupStyles.overlay}>
-          <div
-            style={{
-              ...popupStyles.popup,
-              background: darkMode
-                ? "#1e1e2f"
-                : "#ffffff",
-              color: darkMode ? "#fff" : "#333",
-            }}
-          >
-            <div style={popupStyles.iconCircle}>
-              ⚡
-            </div>
+  <div style={popupStyles.overlay}>
+    <div
+      style={{
+        ...popupStyles.popup,
+        background: darkMode
+          ? "#1e1e1e"
+          : "rgba(255,255,255,0.95)",
+        color: darkMode ? "#fff" : "#333",
+      }}
+    >
+      <div style={popupStyles.iconCircle}>⚡</div>
 
-            <h3 style={popupStyles.title}>
-              Confirm Booking?
-            </h3>
+      <h3 style={popupStyles.title}>Confirm Booking?</h3>
 
-            <p style={popupStyles.text}>
-              Are you sure you want to book this
-              worker?
-            </p>
+      <p
+        style={{
+          ...popupStyles.text,
+          color: darkMode ? "#bbb" : "#666",
+        }}
+      >
+        Are you sure you want to book this worker?
+      </p>
 
-            <div style={popupStyles.actions}>
-              <button
-                style={popupStyles.confirmBtn}
-                onClick={handleBook}
-              >
-                Yes, Book Now
-              </button>
+      <div style={popupStyles.actions}>
+        <button
+          style={popupStyles.confirmBtn}
+          onClick={handleBook}
+        >
+          Yes, Book Now
+        </button>
 
-              <button
-                style={popupStyles.cancelBtn}
-                onClick={() =>
-                  setShowConfirm(false)
-                }
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+        <button
+          style={{
+            ...popupStyles.cancelBtn,
+            border: darkMode
+              ? "1px solid #444"
+              : "1px solid #ddd",
+            background: darkMode
+              ? "#2a2a2a"
+              : "#fff",
+            color: darkMode ? "#fff" : "#333",
+          }}
+          onClick={() => setShowConfirm(false)}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
     </>
   );
 };
@@ -417,23 +425,22 @@ const styles = {
 
 const popupStyles = {
   overlay: {
-    position: "fixed",
-    inset: 0,
-    background: "rgba(0,0,0,0.7)",
-    backdropFilter: "blur(8px)",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 5000,
-  },
+  position: "fixed",
+  inset: 0,
+  background: "rgba(0,0,0,0.65)",
+  backdropFilter: "blur(6px)",
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+  zIndex: 5000,
+},
   popup: {
-    padding: "40px",
-    borderRadius: "28px",
-    width: "360px",
-    textAlign: "center",
-    boxShadow:
-      "0 25px 70px rgba(0,0,0,0.4)",
-  },
+  padding: "40px",
+  borderRadius: "30px",
+  width: "360px",
+  textAlign: "center",
+  boxShadow: "0 25px 70px rgba(0,0,0,0.4)",
+},
   iconCircle: {
     width: "70px",
     height: "70px",
