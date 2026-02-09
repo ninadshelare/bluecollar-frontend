@@ -6,6 +6,10 @@ const BASE = "http://localhost:8081";
 export const getPaymentByRequest = (workRequestId) =>
   axios.get(`${BASE}/api/payments/by-request/${workRequestId}`);
 
-/* Pay Now (no gateway) */
-export const payNow = (paymentId) =>
-  axios.put(`${BASE}/api/payments/${paymentId}/pay`);
+/* STEP 1: Initiate payment (send OTP) */
+export const initiatePayment = (paymentId) =>
+  axios.post(`${BASE}/api/payments/${paymentId}/initiate`);
+
+/* STEP 2: Verify OTP and complete payment */
+export const verifyOtpPayment = (paymentId, data) =>
+  axios.post(`${BASE}/api/payments/${paymentId}/verify-otp`, data);

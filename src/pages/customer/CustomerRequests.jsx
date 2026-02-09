@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import Navbar from "../../components/Navbar";
 import { getCustomerRequests } from "../../api/workRequestApi";
 import { submitFeedback } from "../../api/feedbackApi";
-import { payNow } from "../../api/paymentApi";
 import StarRating from "../../components/StarRating";
+import OtpPaymentModal from "../../components/payment/OtpPaymentModal";
+
 
 const CustomerRequests = () => {
   const customerId = localStorage.getItem("userId");
@@ -13,6 +14,9 @@ const CustomerRequests = () => {
   const [feedback, setFeedback] = useState({});
   const [processingPayment, setProcessingPayment] = useState(null);
   const [submittingFeedback, setSubmittingFeedback] = useState(null);
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [activePaymentId, setActivePaymentId] = useState(null);
+
 
   /* ---------- DARK MODE ---------- */
   const [darkMode, setDarkMode] = useState(
@@ -51,17 +55,7 @@ const CustomerRequests = () => {
   };
 
   /* ---------- PAYMENT ---------- */
-  const handlePayNow = async (paymentId) => {
-    try {
-      setProcessingPayment(paymentId);
-      await payNow(paymentId);
-      fetchRequests();
-    } catch {
-      alert("Payment failed");
-    } finally {
-      setProcessingPayment(null);
-    }
-  };
+
 
   /* ---------- FEEDBACK ---------- */
   const handleFeedbackSubmit = async (requestId) => {
@@ -84,12 +78,12 @@ const CustomerRequests = () => {
         prev.map((req) =>
           req.requestId === requestId
             ? {
-                ...req,
-                feedback: {
-                  rating: data.rating,
-                  comment: data.comment || "",
-                },
-              }
+              ...req,
+              feedback: {
+                rating: data.rating,
+                comment: data.comment || "",
+              },
+            }
             : req
         )
       );
@@ -215,20 +209,20 @@ const CustomerRequests = () => {
                     />
 
                     <button
-  style={{
-    ...styles.submitBtn,
-    opacity: feedback[req.requestId]?.rating ? 1 : 0.5,
-    cursor: feedback[req.requestId]?.rating ? "pointer" : "not-allowed",
-  }}
-  disabled={!feedback[req.requestId]?.rating}
-  onClick={() => {
-    setConfirmType("FEEDBACK");
-    setSelectedId(req.requestId);
-    setShowConfirmPopup(true);
-  }}
->
-  Submit Feedback
-</button>
+                      style={{
+                        ...styles.submitBtn,
+                        opacity: feedback[req.requestId]?.rating ? 1 : 0.5,
+                        cursor: feedback[req.requestId]?.rating ? "pointer" : "not-allowed",
+                      }}
+                      disabled={!feedback[req.requestId]?.rating}
+                      onClick={() => {
+                        setConfirmType("FEEDBACK");
+                        setSelectedId(req.requestId);
+                        setShowConfirmPopup(true);
+                      }}
+                    >
+                      Submit Feedback
+                    </button>
 
                   </div>
                 )}
@@ -251,6 +245,7 @@ const CustomerRequests = () => {
               {confirmType === "PAY" ? "💳" : "⭐"}
             </div>
 
+
             <h3>
               {confirmType === "PAY"
                 ? "Confirm Payment?"
@@ -262,8 +257,10 @@ const CustomerRequests = () => {
                 style={popupStyles.confirmBtn}
                 onClick={() => {
                   if (confirmType === "PAY") {
-                    handlePayNow(selectedId);
-                  } else {
+                    setActivePaymentId(selectedId);
+                    setShowOtpModal(true);
+                  }
+                  else {
                     handleFeedbackSubmit(selectedId);
                   }
                   setShowConfirmPopup(false);
@@ -282,6 +279,17 @@ const CustomerRequests = () => {
           </div>
         </div>
       )}
+      {showOtpModal && (
+        <OtpPaymentModal
+          paymentId={activePaymentId}
+          onSuccess={() => {
+            setShowOtpModal(false);
+            fetchRequests(); // refresh status
+          }}
+          onClose={() => setShowOtpModal(false)}
+        />
+      )}
+
     </>
   );
 };
